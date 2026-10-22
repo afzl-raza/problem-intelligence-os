@@ -24,7 +24,7 @@
 | `GET` | `/problems/{problem_id}` | `200 OK` | Retrieve single problem details |
 | `PATCH` | `/problems/{problem_id}` | `200 OK` | Partially update an existing problem |
 | `DELETE` | `/problems/{problem_id}` | `204 No Content` | Delete a problem record |
-| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category (Postgres `tsvector`/`ts_rank`); additive to the exact-filter list endpoint above |
+| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category. Web-search syntax (`"phrase"`, `OR`, `-exclude`); filters `domain` (slug), `category`, `impact_level`, `funding_stage`; returns domain/impact `facets` (counted before filters), per-item `domains`, and a highlighted `snippet` (matches wrapped in `\u0002`…`\u0003`, never HTML) |
 
 ### Company ↔ Problem Relationships
 | Method | Endpoint | Status Code | Description |
@@ -33,6 +33,19 @@
 | `DELETE` | `/problems/{problem_id}/companies/{company_id}` | `204 No Content` | Unlink a company from a problem |
 | `GET` | `/problems/{problem_id}/companies` | `200 OK` | Get all companies attempting to solve a problem |
 | `GET` | `/companies/{company_id}/problems` | `200 OK` | Get all problems addressed by a specific company |
+
+### Domains
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/domains` | `200 OK` | All problem domains (e.g. `parking-management-saas`) with problem and distinct-company counts |
+| `GET` | `/domains/{slug}` | `200 OK` / `404` | A single domain with its counts |
+
+### Search
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/companies/search` | `200 OK` | Ranked full-text company search; a company matches on its own profile **or** through any problem it is linked to. Optional `funding_stage` filter |
+| `GET` | `/search/suggest` | `200 OK` | Autocomplete / typo-tolerant suggestions across problem titles, company names, and domain names (`pg_trgm` word similarity) |
+| `GET` | `/search/spellcheck` | `200 OK` | "Did you mean" correction against the searchable vocabulary; `corrected` is only set when it differs **and** returns at least one problem |
 
 ### Company Entity Resolution & Deduplication
 | Method | Endpoint | Status Code | Description |
@@ -74,7 +87,7 @@
 `CORS_ORIGINS` (env var, comma-separated) controls which frontend origins may call this API. Local dev default: `http://localhost:5173,http://127.0.0.1:5173` (the Vite dev server). Only `GET` is allowed cross-origin — the demo frontend is read-only.
 
 ## Demo Frontend
-A read-only React + Vite SPA (`frontend/`) consumes `GET /problems/search`, `GET /problems/{problem_id}/companies`, and `GET /problems/{problem_id}/companies/{company_id}/evidence` to drive a search → companies → evidence click-through flow. See the root `README.md` for setup, and `backend/scripts/seed_demo_data.py` for idempotent demo data.
+A read-only React + Vite SPA (`frontend/`) consumes the search, suggest, spellcheck, company-search, and company/evidence endpoints to drive a search → companies → evidence click-through flow with filters, highlighting, and autocomplete. See the root `README.md` for setup, and `backend/scripts/ingest_research_data.py` for idempotent research data.
 
 ---
 

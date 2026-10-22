@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.company_problem import RelationshipType
 from app.models.problem import ImpactLevel
@@ -37,8 +37,28 @@ class ProblemPaginatedResponse(BaseModel):
     limit: int
 
 
+class DomainRef(BaseModel):
+    slug: str
+    name: str
+
+
 class ProblemMatch(ProblemResponse):
     relevance_score: float
+    snippet: str = Field(
+        description="Description with matched terms wrapped in \\u0002 (start) and \\u0003 (end) markers. Plain text, never HTML."
+    )
+    domains: list[DomainRef]
+
+
+class FacetCount(BaseModel):
+    value: str
+    label: str
+    count: int
+
+
+class SearchFacets(BaseModel):
+    domains: list[FacetCount]
+    impact_levels: list[FacetCount]
 
 
 class ProblemSearchResponse(BaseModel):
@@ -46,6 +66,7 @@ class ProblemSearchResponse(BaseModel):
     total: int
     skip: int
     limit: int
+    facets: SearchFacets
 
 
 class CompanyProblemLink(BaseModel):

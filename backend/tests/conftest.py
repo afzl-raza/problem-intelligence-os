@@ -10,6 +10,7 @@ from app.models.company_problem import CompanyProblem  # noqa: F401
 from app.models.source import Source  # noqa: F401
 from app.models.evidence import EvidenceRecord  # noqa: F401
 from app.models.ingestion_run import IngestionRun  # noqa: F401
+from app.models.domain import Domain, ProblemDomain  # noqa: F401
 
 from app.db.session import get_db
 from app.main import app
@@ -36,7 +37,7 @@ def setup_test_database():
 def clean_database():
     """Truncate tables before each test to ensure test isolation."""
     with test_engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE companies, problems, sources, evidence_records, ingestion_runs RESTART IDENTITY CASCADE;"))
+        conn.execute(text("TRUNCATE TABLE companies, problems, sources, evidence_records, ingestion_runs, domains RESTART IDENTITY CASCADE;"))
         conn.commit()
 
 

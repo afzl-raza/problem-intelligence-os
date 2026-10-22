@@ -1,4 +1,12 @@
-import type { CompanyForProblem, EvidenceRecord, ProblemSearchResponse } from './types'
+import type {
+  CompanyForProblem,
+  CompanySearchResponse,
+  EvidenceRecord,
+  ProblemSearchFilters,
+  ProblemSearchResponse,
+  SpellcheckResponse,
+  Suggestion,
+} from './types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
@@ -13,8 +21,8 @@ export class ApiError extends Error {
   }
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`)
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, { signal })
 
   if (!response.ok) {
     let detail: unknown
@@ -29,9 +37,33 @@ async function getJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function searchProblems(query: string, skip = 0, limit = 20): Promise<ProblemSearchResponse> {
-  const params = new URLSearchParams({ q: query, skip: String(skip), limit: String(limit) })
-  return getJson<ProblemSearchResponse>(`/problems/search?${params.toString()}`)
+function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  }
+  return search.toString()
+}
+
+export function searchProblems(
+  q: string,
+  filters: ProblemSearchFilters = {},
+  skip = 0,
+  limit = 20,
+): Promise<ProblemSearchResponse> {
+  return getJson(`/problems/search?${query({ q, skip, limit, ...filters })}`)
+}
+
+export function searchCompanies(q: string, skip = 0, limit = 20): Promise<CompanySearchResponse> {
+  return getJson(`/companies/search?${query({ q, skip, limit })}`)
+}
+
+export function suggest(q: string, signal?: AbortSignal): Promise<Suggestion[]> {
+  return getJson(`/search/suggest?${query({ q, limit: 8 })}`, signal)
+}
+
+export function spellcheck(q: string): Promise<SpellcheckResponse> {
+  return getJson(`/search/spellcheck?${query({ q })}`)
 }
 
 export function getCompaniesForProblem(problemId: string): Promise<CompanyForProblem[]> {

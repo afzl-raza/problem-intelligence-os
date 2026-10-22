@@ -12,9 +12,31 @@ from app.repositories.company import (
     find_similar_companies as find_similar_companies_repository,
     get_companies as get_companies_repository,
     get_company as get_company_repository,
+    search_companies as search_companies_repository,
     update_company as update_company_repository,
 )
-from app.schemas.company import CompanyCreate, CompanyUpdate
+from app.schemas.company import CompanyCreate, CompanyResponse, CompanyUpdate
+
+
+def search_companies(
+    db: Session,
+    query: str,
+    skip: int = 0,
+    limit: int = 20,
+    funding_stage: FundingStage | None = None,
+) -> dict:
+    items, total = search_companies_repository(
+        db=db, query=query, skip=skip, limit=limit, funding_stage=funding_stage
+    )
+    return {
+        "items": [
+            {**CompanyResponse.model_validate(company, from_attributes=True).model_dump(), "relevance_score": score}
+            for company, score in items
+        ],
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 def create_company(

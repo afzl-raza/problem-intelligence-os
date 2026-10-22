@@ -8,7 +8,8 @@
 - **ORM**: SQLAlchemy 2.0.51
 - **Driver**: Psycopg 3.3.4 (`postgresql+psycopg://`)
 - **Extensions**: `pg_trgm` (trigram similarity, enabled by migration `665a1bf5fb13`; powers company duplicate detection)
-- **Full-Text Search**: native Postgres `tsvector`/`ts_rank` (no extension required), added by migration `2aba437f9b2a`; powers problem search
+- **Full-Text Search**: native Postgres `tsvector`/`ts_rank`/`websearch_to_tsquery`/`ts_headline` (no extension required); problems since migration `2aba437f9b2a`, companies since `ee5da04ca95e`
+- **Typo tolerance**: `pg_trgm` `word_similarity`/`similarity` power `/search/suggest` and `/search/spellcheck`
 
 ---
 
@@ -25,6 +26,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `5ddb51966a53` | `create_ingestion_runs_and_evidence_unique_constraint` | Sprint 2.3 | Applied |
 | `665a1bf5fb13` | `add_company_normalized_name_and_trgm_index` | Sprint 2.4 | Applied |
 | `2aba437f9b2a` | `add_problem_search_vector_and_gin_index` | Sprint 2.5 | Applied |
+| `ee5da04ca95e` | `add_domains_and_company_search_vector` | Sprint 3.2 | Applied |
 
 ---
 
@@ -40,6 +42,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `industry` | `VARCHAR(100)` | NULLABLE | `ix_companies_industry` | Primary industry domain |
 | `country` | `VARCHAR(100)` | NULLABLE | `ix_companies_country` | Country location |
 | `funding_stage` | `VARCHAR/ENUM` | NOT NULL, default `unknown` | `ix_companies_funding_stage` | Categorical funding stage |
+| `search_vector` | `TSVECTOR` | GENERATED ALWAYS AS ... STORED (name A, industry B, description C, problem_summary C) | `ix_companies_search_vector` (GIN) | Full-text search vector, maintained by Postgres |
 
 ---
 
@@ -114,3 +117,26 @@ Managed strictly via Alembic (`backend/alembic`).
 | `started_at` | `TIMESTAMPTZ` | NULLABLE | No | Timestamp when collector execution began |
 | `completed_at` | `TIMESTAMPTZ` | NULLABLE | No | Timestamp when job completed or failed |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, UTC default | `ix_ingestion_runs_created_at` | Record creation timestamp |
+
+---
+
+### 7. `domains` Table
+
+| Column Name | Data Type | Constraints | Index | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Primary Key, `uuid4` default | Yes | Unique domain identifier |
+| `slug` | `VARCHAR(120)` | NOT NULL, UNIQUE | `ix_domains_slug` (unique) | URL-safe key, e.g. `parking-management-saas` |
+| `name` | `VARCHAR(255)` | NOT NULL | No | Display name, e.g. `Parking Management SaaS` |
+| `description` | `TEXT` | NULLABLE | No | Optional description |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, UTC default | No | Record creation timestamp |
+
+---
+
+### 8. `problem_domains` Junction Table
+
+| Column Name | Data Type | Constraints | Index | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `problem_id` | `UUID` | PK, FK -> `problems.id` ON DELETE CASCADE | Composite PK | Problem in the domain |
+| `domain_id` | `UUID` | PK, FK -> `domains.id` ON DELETE CASCADE | Composite PK, `ix_problem_domains_domain_id` | Domain the problem belongs to |
+
+*Note*: Many-to-many — a problem can span domains. Companies belong to domains transitively through their linked problems (no direct company↔domain table, so there is a single source of truth).

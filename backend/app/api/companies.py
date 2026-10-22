@@ -11,6 +11,7 @@ from app.schemas.company import (
     CompanyMergeResponse,
     CompanyPaginatedResponse,
     CompanyResponse,
+    CompanySearchResponse,
     CompanyUpdate,
 )
 from app.services.company import (
@@ -20,6 +21,7 @@ from app.services.company import (
     get_company,
     merge_companies,
     resolve_company_duplicates,
+    search_companies,
     update_company,
 )
 
@@ -70,6 +72,26 @@ def list_companies(
         country=country,
         funding_stage=funding_stage,
     )
+
+
+@router.get(
+    "/search",
+    response_model=CompanySearchResponse,
+    summary="Full-text search companies",
+    description=(
+        "Ranked full-text search over companies. A company matches on its own "
+        "profile text or through any problem it is linked to. Supports "
+        "\"phrases\", OR, and -exclusion."
+    ),
+)
+def search_companies_endpoint(
+    q: str = Query(..., min_length=1, pattern=r"\S", description="Search query (supports \"phrases\", OR, -exclusion)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
+    funding_stage: FundingStage | None = Query(None, description="Filter by funding stage"),
+    db: Session = Depends(get_db),
+):
+    return search_companies(db=db, query=q, skip=skip, limit=limit, funding_stage=funding_stage)
 
 
 @router.get(

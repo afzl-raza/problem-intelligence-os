@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.company import FundingStage
 from app.models.problem import ImpactLevel
 from app.schemas.problem import (
     CompanyProblemLink,
     CompanyProblemResponse,
     ProblemCreate,
-    ProblemMatch,
     ProblemPaginatedResponse,
     ProblemResponse,
     ProblemSearchResponse,
@@ -75,28 +75,32 @@ def list_problems_endpoint(
     response_model=ProblemSearchResponse,
     summary="Full-text search problems",
     description=(
-        "Ranked full-text search over problem title/description/category "
-        "using Postgres tsvector/ts_rank. Additive to the exact-filter "
-        "GET /problems endpoint above, not a replacement for it."
+        "Ranked full-text search over problem title/description/category. "
+        "Supports web-search syntax: \"exact phrase\", OR, and -exclusion. "
+        "Optional filters narrow results; facet counts are computed over the "
+        "text-matched set before filtering. Additive to GET /problems."
     ),
 )
 def search_problems_endpoint(
-    q: str = Query(..., min_length=1, pattern=r"\S", description="Natural-language search query"),
+    q: str = Query(..., min_length=1, pattern=r"\S", description="Search query (supports \"phrases\", OR, -exclusion)"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
+    domain: str | None = Query(None, min_length=1, description="Filter by domain slug, e.g. parking-management-saas"),
+    category: str | None = Query(None, min_length=1, description="Filter by exact category (case-insensitive)"),
+    impact_level: ImpactLevel | None = Query(None, description="Filter by impact level"),
+    funding_stage: FundingStage | None = Query(None, description="Only problems with at least one linked company at this funding stage"),
     db: Session = Depends(get_db),
 ):
-    result = search_problems(
+    return search_problems(
         db=db,
         query=q,
         skip=skip,
         limit=limit,
+        domain_slug=domain,
+        category=category,
+        impact_level=impact_level,
+        funding_stage=funding_stage,
     )
-    result["items"] = [
-        ProblemMatch(**ProblemResponse.model_validate(problem, from_attributes=True).model_dump(), relevance_score=score)
-        for problem, score in result["items"]
-    ]
-    return result
 
 
 @router.get(

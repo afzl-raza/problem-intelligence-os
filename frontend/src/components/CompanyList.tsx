@@ -1,22 +1,12 @@
 import type { FetchState } from '../api/fetchState'
 import type { CompanyForProblem } from '../api/types'
+import { FUNDING_STAGE_LABELS } from './labels'
 
 interface CompanyListProps {
   problemTitle: string
   state: FetchState<CompanyForProblem[]>
   selectedCompanyId: string | null
   onSelect: (company: CompanyForProblem) => void
-}
-
-const FUNDING_STAGE_LABELS: Record<CompanyForProblem['funding_stage'], string> = {
-  pre_seed: 'Pre-seed',
-  seed: 'Seed',
-  series_a: 'Series A',
-  series_b: 'Series B',
-  series_c: 'Series C',
-  growth: 'Growth',
-  bootstrapped: 'Bootstrapped',
-  unknown: 'Unknown stage',
 }
 
 const RELATIONSHIP_LABELS: Record<CompanyForProblem['relationship_type'], string> = {

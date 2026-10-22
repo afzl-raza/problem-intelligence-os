@@ -4,7 +4,7 @@ run:
 	cd backend && .venv\Scripts\python.exe -m uvicorn app.main:app --reload
 
 test:
-	cd backend && .venv\Scripts\python.exe -m pytest tests/test_companies.py -v
+	cd backend && .venv\Scripts\python.exe -m pytest tests/ -v
 
 migrate:
 	cd backend && .venv\Scripts\python.exe -m alembic upgrade head

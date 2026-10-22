@@ -49,7 +49,7 @@ Interactive documentation will be available at [http://127.0.0.1:8000/docs](http
 ### 4. Run Automated Test Suite
 Tests run on an isolated test database (`problem_intelligence_test`):
 ```bash
-.venv\Scripts\python.exe -m pytest tests/test_companies.py -v
+.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
 ### 5. Ingest Research Data (optional)

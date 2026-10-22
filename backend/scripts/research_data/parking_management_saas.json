@@ -1,5 +1,6 @@
 {
-  "domain": "Parking Management SaaS",
+  "dataset": "Parking Management SaaS",
+  "default_domains": ["Parking Management SaaS"],
   "researched_on": "2026-10-23",
   "research_method": "WebSearch to identify real, operating companies in the parking-management space, followed by WebFetch against each company's own official site to extract a faithful summary of what that specific page states. No evidence_text here is recalled from training data -- every entry was checked live during this research pass.",
   "entries": [

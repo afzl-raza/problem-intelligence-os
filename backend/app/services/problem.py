@@ -1,6 +1,7 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
 
+from app.models.company import FundingStage
 from app.models.company_problem import CompanyProblem
 from app.models.problem import ImpactLevel, Problem
 from app.repositories.company import get_company
@@ -16,7 +17,7 @@ from app.repositories.problem import (
     unlink_company_from_problem as unlink_company_from_problem_repo,
     update_problem as update_problem_repo,
 )
-from app.schemas.problem import CompanyProblemLink, ProblemCreate, ProblemUpdate
+from app.schemas.problem import CompanyProblemLink, ProblemCreate, ProblemResponse, ProblemUpdate
 
 
 def create_problem(
@@ -62,18 +63,35 @@ def search_problems(
     query: str,
     skip: int = 0,
     limit: int = 20,
+    domain_slug: str | None = None,
+    category: str | None = None,
+    impact_level: ImpactLevel | None = None,
+    funding_stage: FundingStage | None = None,
 ) -> dict:
-    items, total = search_problems_repo(
+    result = search_problems_repo(
         db=db,
         query=query,
         skip=skip,
         limit=limit,
+        domain_slug=domain_slug,
+        category=category,
+        impact_level=impact_level,
+        funding_stage=funding_stage,
     )
     return {
-        "items": items,
-        "total": total,
+        "items": [
+            {
+                **ProblemResponse.model_validate(problem, from_attributes=True).model_dump(),
+                "relevance_score": score,
+                "snippet": snippet,
+                "domains": domains,
+            }
+            for problem, score, snippet, domains in result["items"]
+        ],
+        "total": result["total"],
         "skip": skip,
         "limit": limit,
+        "facets": result["facets"],
     }
 
 

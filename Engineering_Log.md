@@ -345,3 +345,40 @@ Feedback on the Sprint 3.0 demo: four hardcoded companies (Stripe/Linear/Plaid/N
 - Adding more research-data domains is now just "research it for real, write a JSON file" — no code changes required.
 - A live, on-demand research/discovery feature (user types any topic, the backend performs web research automatically) remains a distinct, much larger decision — new paid search/LLM API infrastructure, anti-hallucination grounding at request time, async job handling — not undertaken in this sprint.
 
+---
+
+## Sprint 3.2 — Domains + Search Foundation (2026-10-23)
+
+### Why this sprint, now:
+First sprint of the expansion roadmap (3.2 → 4.0). A status review against the project context doc showed search was bottlenecked by data *structure*, not algorithms: the research domain ("Parking Management SaaS") was never persisted (`domain_tags` null everywhere), free-text categories already disagreed with each other, and companies had no real search. User-confirmed order: domains + search foundation first, then a landscape view (3.3), semantic search with a local model (3.4), whitespace signals (3.5), and an in-app research pipeline with a human review queue (4.0).
+
+### Learned:
+- `websearch_to_tsquery` gives users `"phrases"`, `OR`, and `-exclusion` for free; plain multi-word queries behave exactly as `plainto_tsquery` did, so every existing search test passed unchanged.
+- Phrase search is strict about adjacency: `"curb enforcement"` does not match "Curb **and parking** enforcement". That's correct behavior, but test fixtures have to use genuinely adjacent phrases.
+- `ts_headline` accepts control characters as `StartSel`/`StopSel` when passed as a bound parameter. Using `\u0002`/`\u0003` sentinels means the API never emits HTML and the frontend builds `<mark>` elements itself, so highlighting can't become an XSS vector. `HighlightAll=true` keeps short descriptions whole instead of truncating them mid-sentence.
+- An entity-level "did you mean" is the wrong tool for a misspelled *query*: suggesting the domain "Parking Management SaaS" for `parkng` leads to a search for "saas", which no problem text contains, so it comes back empty again. A token-level spellcheck against the real searchable vocabulary (`parkng managment` → `parking management`), returned only when the corrected query actually has results, is what the UX needs.
+- `pg_trgm` thresholds had to be set from data, not guessed. Real typos scored 0.50–0.64 `similarity` (`parkng`, `managment`, `enforcment`); unrelated words ≤0.17. In suggestions, false positives (`park` → "Passport") sat at exactly 0.40 `word_similarity` and real ones at 0.57+, so suggest uses 0.5 and spellcheck 0.4. Transposition typos (`payemnt`, 0.33) are a known miss.
+- Companies with sparse profiles (researched entries carry only name + industry) are nearly invisible to profile-only search. Matching a company *through its linked problems*, ranked by the better of the two scores, is what "who works on X" actually means.
+- File-watching reload (`uvicorn --reload`) didn't fire reliably in this OneDrive-synced folder, so explicit restarts are the dependable path when smoke-testing.
+
+### Problems:
+- The founding dataset wasn't one domain; its file-level "domain" label was really a dataset name. The JSON format now separates `dataset` (label) from `default_domains`, with a per-entry `domains` override.
+- Research ingestion lived in `scripts/` with no automated tests, and Sprint 4.0's approval step will need the same logic.
+- `make test` and the README ran only `test_companies.py` (13 of the then-57 tests).
+- Both result lists and both selection panels could show stale data if an earlier slow request resolved after a newer one.
+
+### Solved:
+- Migration `ee5da04ca95e`: `domains` (unique slug), `problem_domains` (many-to-many, cascade both sides, mirroring `company_problems`), and a generated `companies.search_vector` with a GIN index, using the same single-source expression-constant pattern as problems.
+- Moved ingestion to `app/services/research_ingestion.py` (domain-aware; the CLI is now a thin wrapper). Re-running both datasets backfilled 4 domains on the first run and created zero rows on the second; Postgres confirms 8 problems ↔ 8 domain links.
+- `GET /problems/search` gained filters, facets (counted over the text match *before* filters so chips keep their counts), per-item domains, and sentinel snippets. Added `GET /companies/search`, `GET /domains`, `GET /domains/{slug}`, `GET /search/suggest`, and `GET /search/spellcheck`.
+- Frontend: filter chips with counts, highlighted snippets (`Highlighted` component, no `dangerouslySetInnerHTML`), debounced keyboard-navigable autocomplete (ARIA combobox), "Did you mean…?", a Companies tab, and request-sequence guards against stale responses.
+- Fixed the test commands in the README and Makefile to run the whole suite.
+
+### Tests:
+- Backend: **79/79 PASSED** (57 existing + 22 new: `test_research_ingestion.py`, `test_domains.py`, `test_company_search.py`, `test_search_suggest.py`, and extended `test_problem_search.py`).
+- Frontend: `tsc -b` clean, `oxlint` clean (two intentional control-character regexes suppressed with a reason), `npm run build` passes.
+- Browser (real dev DB): autocomplete for `park`; `parking` → 4 results with highlighted matches and Domain/Impact chips; the **high** filter narrows to 2 while other facet counts stay visible; the Companies tab shows the 4 parking companies with site links; `parkng managment` → "Did you mean parking management?" → clicking reruns the corrected search; problem → Passport → evidence click-through still works; no console errors.
+
+### Next Steps:
+- Sprint 3.3: `GET /domains/{slug}/landscape`, a multi-page frontend with `react-router-dom` (domain browse, landscape, problem and company pages), and 2–3 more real researched domains.
+

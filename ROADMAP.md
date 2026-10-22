@@ -8,7 +8,7 @@ Stage 2: Problem Entity & Company-Problem Link Layer (COMPLETE — Sprint 2.1)
 Stage 3: Evidence & Source Provenance Layer (COMPLETE — Sprint 2.2)
 Stage 4: Multi-Source Ingestion & Evidence Ingestion Foundation (COMPLETE — Sprint 2.3)
 Stage 5: Entity Resolution & Deduplication Pipeline (COMPLETE — Sprint 2.4)
-Stage 6: Search, Filtering & Similarity Engine (IN PROGRESS — Sprint 2.5 COMPLETE: problem full-text search)
+Stage 6: Search, Filtering & Similarity Engine (IN PROGRESS — keyword search complete through Sprint 3.2; semantic search next)
 Stage 7: Opportunity Intelligence & Whitespace Signal Detection
 Stage 8: Global Platform & Interactive UI Dashboard (STARTED — Sprint 3.0: demo frontend)
 ```
@@ -69,9 +69,15 @@ Note: campus-recruiting timeline pressure (see `Engineering_Log.md`'s Sprint 3.0
   - [x] Generated `TSVECTOR` column on `problems` (title weight A, description weight B, category weight C), maintained automatically by Postgres
   - [x] GIN index for fast `@@` lookups
   - [x] Ranked search endpoint: `GET /problems/search?q=...` (`ts_rank`, paginated, additive to the existing exact-filter `GET /problems`)
-- [ ] Semantic/embeddings search (deferred — tied to the already-stubbed `OPENAI_API_KEY`; requires a pgvector-enabled Postgres image)
-- [ ] Company search beyond name-substring filtering
-- [ ] Whitespace opportunity signal detection
+- [x] **Sprint 3.2 — Domains + search foundation**
+  - [x] `domains` + `problem_domains` tables; research data now persists its domain (backfilled for both datasets)
+  - [x] Ingestion moved in-app (`app/services/research_ingestion.py`) and covered by automated tests
+  - [x] Web-search syntax (`"phrases"`, `OR`, `-exclude`), filters (domain, category, impact, funding stage), facet counts, XSS-safe highlighted snippets
+  - [x] Company full-text search, matching on own profile or linked problems (`GET /companies/search`)
+  - [x] Typo-tolerant autocomplete (`GET /search/suggest`) and "did you mean" (`GET /search/spellcheck`)
+  - [x] Frontend: filter chips, highlighting, autocomplete, "did you mean", Companies tab
+- [ ] Semantic/embeddings search — Sprint 3.4, local open-source model (decided 2026-10-23)
+- [ ] Whitespace opportunity signal detection — Sprint 3.5
 
 ### Phase 7: Demo Frontend (Sprint 3.0) [DONE] — first slice of Stage 8
 - [x] React + Vite + TypeScript SPA (`frontend/`), read-only, no router: search → companies → evidence

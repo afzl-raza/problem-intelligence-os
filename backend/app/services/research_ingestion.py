@@ -1,21 +1,14 @@
-"""Shared, domain-agnostic idempotent ingestion logic for research-data
-JSON files (see scripts/research_data/*.json and
-scripts/ingest_research_data.py).
+"""Idempotent ingestion of researched company/problem/evidence entries.
 
-Every entity is get-or-created and nothing is ever truncated or deleted,
-so running the same (or an overlapping) dataset any number of times never
-produces duplicates. Every ingested EvidenceRecord is structurally forced
-to confidence_score=UNVERIFIED and every ingested Source to
-is_verified=False -- this is not a per-entry option, because research-data
-entries are AI-paraphrased summaries of a company's own marketing copy,
-not independently verified research, and the data must never imply
-otherwise.
+Shared by the CLI loader (scripts/ingest_research_data.py) and, later, the
+in-app research pipeline's approval step, so both publish through exactly
+the same rules. Every entity is get-or-created and nothing is ever deleted.
+
+Research entries are paraphrases of a company's own marketing copy, not
+independently verified facts, so every Source is forced to
+is_verified=False and every EvidenceRecord to confidence_score=UNVERIFIED.
+This is deliberately not a per-entry option.
 """
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,6 +22,7 @@ from app.schemas.evidence import EvidenceCreate
 from app.schemas.problem import CompanyProblemLink, ProblemCreate
 from app.schemas.source import SourceCreate
 from app.services.company import create_company
+from app.services.domain import attach_problem_to_domain, get_or_create_domain
 from app.services.evidence import create_evidence
 from app.services.problem import create_problem, link_company_to_problem
 from app.services.source import create_source
@@ -37,8 +31,7 @@ from app.utils.entity_resolution import normalize_company_name
 
 
 def get_or_create_company(db: Session, name: str, fields: dict) -> tuple[Company, bool]:
-    normalized = normalize_company_name(name)
-    existing = db.scalar(select(Company).where(Company.normalized_name == normalized))
+    existing = db.scalar(select(Company).where(Company.normalized_name == normalize_company_name(name)))
     if existing:
         return existing, False
     company = create_company(
@@ -118,12 +111,13 @@ def get_or_create_evidence(
             content_hash=content_hash,
         ),
     )
-    assert evidence is not None, "company/problem/source were just created, this should never be None"
+    if evidence is None:
+        raise RuntimeError("Evidence creation failed: company, problem, or source vanished mid-ingestion")
     return evidence, True
 
 
-def ingest_entry(db: Session, entry: dict) -> dict:
-    """Ingest one research-data entry; returns a dict of what was created vs. reused."""
+def ingest_entry(db: Session, entry: dict, default_domains: list[str] | None = None) -> dict:
+    """Ingest one research entry; returns what was created vs. reused."""
     company, company_created = get_or_create_company(db, entry["company_name"], entry["company"])
     problem, problem_created = get_or_create_problem(db, entry["problem_title"], entry["problem"])
     source, source_created = get_or_create_source(db, entry["source_name"], entry["source"])
@@ -142,6 +136,13 @@ def ingest_entry(db: Session, entry: dict) -> dict:
         db, company, problem, source, entry["evidence_text"], entry["source_url"]
     )
 
+    domain_names = entry.get("domains") or default_domains or []
+    domains_created = 0
+    for domain_name in domain_names:
+        domain, created = get_or_create_domain(db, domain_name)
+        domains_created += int(created)
+        attach_problem_to_domain(db, problem, domain)
+
     return {
         "company_name": entry["company_name"],
         "problem_title": entry["problem_title"],
@@ -149,8 +150,11 @@ def ingest_entry(db: Session, entry: dict) -> dict:
         "problem_created": problem_created,
         "source_created": source_created,
         "evidence_created": evidence_created,
+        "domains_created": domains_created,
+        "domains": domain_names,
     }
 
 
-def ingest_entries(db: Session, entries: list[dict]) -> list[dict]:
-    return [ingest_entry(db, entry) for entry in entries]
+def ingest_dataset(db: Session, dataset: dict) -> list[dict]:
+    default_domains = dataset.get("default_domains")
+    return [ingest_entry(db, entry, default_domains) for entry in dataset["entries"]]

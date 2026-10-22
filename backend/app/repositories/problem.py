@@ -1,12 +1,19 @@
 from datetime import datetime, timezone
 from uuid import UUID
-from sqlalchemy import func, select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
-from app.models.company import Company
+from app.models.company import Company, FundingStage
 from app.models.company_problem import CompanyProblem
+from app.models.domain import Domain, ProblemDomain
 from app.models.problem import ImpactLevel, Problem
 from app.schemas.problem import CompanyProblemLink, ProblemCreate, ProblemUpdate
+
+# Control-character highlight markers: they never occur in real text, and the
+# frontend splits on them to render <mark> itself, so no HTML ever leaves the API.
+SNIPPET_START = "\x02"
+SNIPPET_STOP = "\x03"
+_HEADLINE_OPTIONS = f"StartSel={SNIPPET_START}, StopSel={SNIPPET_STOP}, HighlightAll=true"
 
 
 def create_problem(
@@ -58,33 +65,105 @@ def get_problem(
     return db.scalar(statement)
 
 
+def count_problem_matches(db: Session, query: str) -> int:
+    ts_query = func.websearch_to_tsquery("english", query)
+    return db.scalar(select(func.count(Problem.id)).where(Problem.search_vector.op("@@")(ts_query))) or 0
+
+
 def search_problems(
     db: Session,
     query: str,
     skip: int = 0,
     limit: int = 20,
-) -> tuple[list[tuple[Problem, float]], int]:
-    """Ranked full-text search over problems using the generated
-    `search_vector` tsvector column (title/description/category)."""
-    ts_query = func.plainto_tsquery("english", query)
+    domain_slug: str | None = None,
+    category: str | None = None,
+    impact_level: ImpactLevel | None = None,
+    funding_stage: FundingStage | None = None,
+) -> dict:
+    """Ranked full-text search over problems (title/description/category).
+
+    `query` uses web-search syntax: "quoted phrases", OR, and -exclusion.
+    Facet counts are computed over the text-matched set *before* filters,
+    so the UI can show how many results each filter value would yield.
+    """
+    ts_query = func.websearch_to_tsquery("english", query)
+    text_match = Problem.search_vector.op("@@")(ts_query)
+
+    # One condition list feeds both the count and the page, so they can never disagree.
+    conditions = [text_match]
+    if domain_slug:
+        conditions.append(
+            Problem.id.in_(
+                select(ProblemDomain.problem_id)
+                .join(Domain, Domain.id == ProblemDomain.domain_id)
+                .where(Domain.slug == domain_slug)
+            )
+        )
+    if category:
+        conditions.append(func.lower(Problem.category) == category.lower())
+    if impact_level:
+        conditions.append(Problem.impact_level == impact_level)
+    if funding_stage:
+        conditions.append(
+            Problem.id.in_(
+                select(CompanyProblem.problem_id)
+                .join(Company, Company.id == CompanyProblem.company_id)
+                .where(Company.funding_stage == funding_stage)
+            )
+        )
+
+    total = db.scalar(select(func.count(Problem.id)).where(*conditions)) or 0
+
     rank_expr = func.ts_rank(Problem.search_vector, ts_query)
-
-    base_statement = select(Problem, rank_expr.label("relevance_score")).where(
-        Problem.search_vector.op("@@")(ts_query)
+    snippet_expr = func.ts_headline(
+        "english", func.coalesce(Problem.description, ""), ts_query, _HEADLINE_OPTIONS
     )
-
-    count_statement = select(func.count()).select_from(base_statement.subquery())
-    total = db.scalar(count_statement) or 0
-
-    paginated_statement = (
-        base_statement.order_by(rank_expr.desc(), Problem.id.desc())
+    rows = db.execute(
+        select(Problem, rank_expr, snippet_expr)
+        .where(*conditions)
+        .order_by(rank_expr.desc(), Problem.id.desc())
         .offset(skip)
         .limit(limit)
-    )
+    ).all()
 
-    rows = db.execute(paginated_statement).all()
-    items = [(row[0], float(row[1])) for row in rows]
-    return items, total
+    problem_ids = [row[0].id for row in rows]
+    domains_by_problem: dict[UUID, list[dict]] = {pid: [] for pid in problem_ids}
+    if problem_ids:
+        for problem_id, slug, name in db.execute(
+            select(ProblemDomain.problem_id, Domain.slug, Domain.name)
+            .join(Domain, Domain.id == ProblemDomain.domain_id)
+            .where(ProblemDomain.problem_id.in_(problem_ids))
+            .order_by(Domain.name)
+        ).all():
+            domains_by_problem[problem_id].append({"slug": slug, "name": name})
+
+    domain_facets = db.execute(
+        select(Domain.slug, Domain.name, func.count(distinct(Problem.id)))
+        .join(ProblemDomain, ProblemDomain.domain_id == Domain.id)
+        .join(Problem, Problem.id == ProblemDomain.problem_id)
+        .where(text_match)
+        .group_by(Domain.slug, Domain.name)
+        .order_by(func.count(distinct(Problem.id)).desc(), Domain.name)
+    ).all()
+    impact_facets = db.execute(
+        select(Problem.impact_level, func.count(Problem.id))
+        .where(text_match)
+        .group_by(Problem.impact_level)
+        .order_by(func.count(Problem.id).desc())
+    ).all()
+
+    return {
+        "items": [
+            (row[0], float(row[1]), row[2], domains_by_problem[row[0].id]) for row in rows
+        ],
+        "total": total,
+        "facets": {
+            "domains": [{"value": slug, "label": name, "count": count} for slug, name, count in domain_facets],
+            "impact_levels": [
+                {"value": level.value, "label": level.value, "count": count} for level, count in impact_facets
+            ],
+        },
+    }
 
 
 def update_problem(

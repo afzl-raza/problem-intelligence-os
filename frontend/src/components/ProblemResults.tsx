@@ -1,13 +1,24 @@
 import type { FetchState } from '../api/fetchState'
 import type { ProblemMatch, ProblemSearchResponse } from '../api/types'
+import { Highlighted } from './Highlighted'
 
 interface ProblemResultsProps {
   state: FetchState<ProblemSearchResponse>
   selectedProblemId: string | null
+  filtersActive: boolean
+  correction: string | null
   onSelect: (problem: ProblemMatch) => void
+  onSearchCorrection: (query: string) => void
 }
 
-export function ProblemResults({ state, selectedProblemId, onSelect }: ProblemResultsProps) {
+export function ProblemResults({
+  state,
+  selectedProblemId,
+  filtersActive,
+  correction,
+  onSelect,
+  onSearchCorrection,
+}: ProblemResultsProps) {
   if (state.status === 'idle') {
     return <p className="hint">Search for a problem to see who's already working on it.</p>
   }
@@ -21,7 +32,23 @@ export function ProblemResults({ state, selectedProblemId, onSelect }: ProblemRe
   }
 
   if (state.data.items.length === 0) {
-    return <p className="hint">No problems matched that search. Try different wording.</p>
+    if (filtersActive) {
+      return <p className="hint">No problems match the selected filters.</p>
+    }
+    return (
+      <div className="hint">
+        <p>No problems matched that search.</p>
+        {correction && (
+          <p>
+            Did you mean{' '}
+            <button type="button" className="link-button" onClick={() => onSearchCorrection(correction)}>
+              {correction}
+            </button>
+            ?
+          </p>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -37,8 +64,17 @@ export function ProblemResults({ state, selectedProblemId, onSelect }: ProblemRe
               <h3>{problem.title}</h3>
               <span className="badge">{problem.impact_level}</span>
             </div>
-            {problem.description && <p className="card__body">{problem.description}</p>}
+            {problem.snippet && (
+              <p className="card__body">
+                <Highlighted text={problem.snippet} />
+              </p>
+            )}
             <div className="card__meta">
+              {problem.domains.map((domain) => (
+                <span key={domain.slug} className="tag">
+                  {domain.name}
+                </span>
+              ))}
               {problem.category && <span>{problem.category}</span>}
               <span>relevance {problem.relevance_score.toFixed(2)}</span>
             </div>

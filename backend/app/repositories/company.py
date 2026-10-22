@@ -1,11 +1,56 @@
 from datetime import datetime, timezone
 from uuid import UUID
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.company import Company, FundingStage
+from app.models.company_problem import CompanyProblem
+from app.models.problem import Problem
 from app.schemas.company import CompanyCreate, CompanyUpdate
 from app.utils.entity_resolution import normalize_company_name
+
+
+def search_companies(
+    db: Session,
+    query: str,
+    skip: int = 0,
+    limit: int = 20,
+    funding_stage: FundingStage | None = None,
+) -> tuple[list[tuple[Company, float]], int]:
+    """Ranked full-text search over companies.
+
+    A company matches on its own text (name, industry, description,
+    problem_summary) OR through any problem it is linked to, ranked by the
+    better of the two -- so "parking enforcement" finds the companies
+    working on that problem even when their own profile is sparse.
+    """
+    ts_query = func.websearch_to_tsquery("english", query)
+    own_rank = func.ts_rank(Company.search_vector, ts_query)
+    linked_problem_rank = (
+        select(func.max(func.ts_rank(Problem.search_vector, ts_query)))
+        .join(CompanyProblem, CompanyProblem.problem_id == Problem.id)
+        .where(
+            CompanyProblem.company_id == Company.id,
+            Problem.search_vector.op("@@")(ts_query),
+        )
+        .correlate(Company)
+        .scalar_subquery()
+    )
+    rank_expr = func.greatest(own_rank, func.coalesce(linked_problem_rank, 0))
+
+    conditions = [or_(Company.search_vector.op("@@")(ts_query), linked_problem_rank.isnot(None))]
+    if funding_stage:
+        conditions.append(Company.funding_stage == funding_stage)
+
+    total = db.scalar(select(func.count(Company.id)).where(*conditions)) or 0
+    rows = db.execute(
+        select(Company, rank_expr)
+        .where(*conditions)
+        .order_by(rank_expr.desc(), Company.id.desc())
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    return [(row[0], float(row[1])) for row in rows], total
 
 
 def create_company(

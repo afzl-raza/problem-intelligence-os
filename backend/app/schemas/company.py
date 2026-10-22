@@ -53,6 +53,17 @@ class CompanyPaginatedResponse(BaseModel):
     limit: int
 
 
+class CompanySearchMatch(CompanyResponse):
+    relevance_score: float
+
+
+class CompanySearchResponse(BaseModel):
+    items: list[CompanySearchMatch]
+    total: int
+    skip: int
+    limit: int
+
+
 class CompanyMatch(BaseModel):
     id: UUID
     name: str

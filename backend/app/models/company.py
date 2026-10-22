@@ -2,12 +2,21 @@ from enum import Enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Computed, DateTime, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+# Shared with the Alembic migration that creates the column, so the model
+# and the DDL can never drift apart.
+COMPANY_SEARCH_VECTOR_EXPRESSION = (
+    "setweight(to_tsvector('english', coalesce(name, '')), 'A') || "
+    "setweight(to_tsvector('english', coalesce(industry, '')), 'B') || "
+    "setweight(to_tsvector('english', coalesce(description, '')), 'C') || "
+    "setweight(to_tsvector('english', coalesce(problem_summary, '')), 'C')"
+)
 
 
 class FundingStage(str, Enum):
@@ -113,6 +122,12 @@ class Company(Base):
 
     source_url: Mapped[str | None] = mapped_column(
         String(500),
+        nullable=True,
+    )
+
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed(COMPANY_SEARCH_VECTOR_EXPRESSION, persisted=True),
         nullable=True,
     )
 

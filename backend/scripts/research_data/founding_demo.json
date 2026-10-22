@@ -1,9 +1,10 @@
 {
-  "domain": "Founding demo (Sprint 3.0)",
+  "dataset": "Founding demo (Sprint 3.0)",
   "researched_on": "2026-10-23",
   "entries": [
     {
       "company_name": "Stripe",
+      "domains": ["Fintech"],
       "company": {
         "industry": "Payments infrastructure",
         "country": "United States",
@@ -27,6 +28,7 @@
     },
     {
       "company_name": "Linear",
+      "domains": ["Developer Tools"],
       "company": {
         "industry": "Developer tools / Project management",
         "country": "United States",
@@ -50,6 +52,7 @@
     },
     {
       "company_name": "Plaid",
+      "domains": ["Fintech"],
       "company": {
         "industry": "Fintech infrastructure",
         "country": "United States",
@@ -73,6 +76,7 @@
     },
     {
       "company_name": "Notion",
+      "domains": ["Productivity & Collaboration"],
       "company": {
         "industry": "Productivity / Collaboration software",
         "country": "United States",
