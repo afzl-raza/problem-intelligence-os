@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import NO_NUL_PATTERN, SearchQuery
 from app.db.session import get_db
 from app.models.company import FundingStage
 from app.models.problem import ImpactLevel
@@ -55,8 +56,8 @@ def create_problem_endpoint(
 def list_problems_endpoint(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
-    title: str | None = Query(None, min_length=1, description="Filter by title (case-insensitive substring)"),
-    category: str | None = Query(None, min_length=1, description="Filter by category (case-insensitive substring)"),
+    title: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by title (case-insensitive substring)"),
+    category: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by category (case-insensitive substring)"),
     impact_level: ImpactLevel | None = Query(None, description="Filter by impact level enum"),
     db: Session = Depends(get_db),
 ):
@@ -82,11 +83,11 @@ def list_problems_endpoint(
     ),
 )
 def search_problems_endpoint(
-    q: str = Query(..., min_length=1, pattern=r"\S", description="Search query (supports \"phrases\", OR, -exclusion)"),
+    q: SearchQuery,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
-    domain: str | None = Query(None, min_length=1, description="Filter by domain slug, e.g. parking-management-saas"),
-    category: str | None = Query(None, min_length=1, description="Filter by exact category (case-insensitive)"),
+    domain: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by domain slug, e.g. parking-management-saas"),
+    category: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by exact category (case-insensitive)"),
     impact_level: ImpactLevel | None = Query(None, description="Filter by impact level"),
     funding_stage: FundingStage | None = Query(None, description="Only problems with at least one linked company at this funding stage"),
     db: Session = Depends(get_db),

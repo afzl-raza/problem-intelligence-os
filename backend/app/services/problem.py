@@ -81,12 +81,13 @@ def search_problems(
     return {
         "items": [
             {
-                **ProblemResponse.model_validate(problem, from_attributes=True).model_dump(),
-                "relevance_score": score,
-                "snippet": snippet,
-                "domains": domains,
+                **ProblemResponse.model_validate(item["problem"], from_attributes=True).model_dump(),
+                "relevance_score": item["score"],
+                "snippet": item["snippet"],
+                "title_snippet": item["title_snippet"],
+                "domains": item["domains"],
             }
-            for problem, score, snippet, domains in result["items"]
+            for item in result["items"]
         ],
         "total": result["total"],
         "skip": skip,

@@ -24,7 +24,7 @@
 | `GET` | `/problems/{problem_id}` | `200 OK` | Retrieve single problem details |
 | `PATCH` | `/problems/{problem_id}` | `200 OK` | Partially update an existing problem |
 | `DELETE` | `/problems/{problem_id}` | `204 No Content` | Delete a problem record |
-| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category. Web-search syntax (`"phrase"`, `OR`, `-exclude`); filters `domain` (slug), `category`, `impact_level`, `funding_stage`; returns domain/impact `facets` (counted before filters), per-item `domains`, and a highlighted `snippet` (matches wrapped in `\u0002`…`\u0003`, never HTML) |
+| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category. Web-search syntax (`"phrase"`, `OR`, `-exclude`); filters `domain` (slug), `category`, `impact_level`, `funding_stage`; returns `facets` for domain, category, impact level, and company funding stage (distinct-problem counts over the text match, computed before filters), per-item `domains`, and highlighted `title_snippet` / `snippet` (matches wrapped in `\u0002`…`\u0003`, never HTML) |
 
 ### Company ↔ Problem Relationships
 | Method | Endpoint | Status Code | Description |
@@ -82,6 +82,11 @@
 | `GET` | `/ingestion/runs/{run_id}` | `200 OK` | Retrieve detailed execution metrics and audit details for a run |
 
 ---
+
+## Input Validation
+- Search queries (`q` on `/problems/search`, `/companies/search`, `/search/suggest`, `/search/spellcheck`) must contain at least one non-whitespace character, no NUL bytes, and at most 200 characters; otherwise `422`.
+- Optional text filters (`domain`, `category`, `name`, `industry`, `country`, `title`, source `name`) reject NUL bytes with `422`. PostgreSQL text cannot hold `\x00`, so without this check it would surface as a `500`.
+- Odd-but-legal queries (punctuation only, unbalanced quotes, bare `OR`/`-`, emoji, SQL-looking text) return `200`, usually with no results.
 
 ## Cross-Origin Access
 `CORS_ORIGINS` (env var, comma-separated) controls which frontend origins may call this API. Local dev default: `http://localhost:5173,http://127.0.0.1:5173` (the Vite dev server). Only `GET` is allowed cross-origin — the demo frontend is read-only.

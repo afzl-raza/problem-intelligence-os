@@ -61,7 +61,9 @@ export function ProblemResults({
             onClick={() => onSelect(problem)}
           >
             <div className="card__header">
-              <h3>{problem.title}</h3>
+              <h3>
+                <Highlighted text={problem.title_snippet} />
+              </h3>
               <span className="badge">{problem.impact_level}</span>
             </div>
             {problem.snippet && (

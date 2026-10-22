@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import NO_NUL_PATTERN
 from app.db.session import get_db
 from app.models.source import SourceType
 from app.schemas.source import (
@@ -46,7 +47,7 @@ def create_source_endpoint(
 def list_sources_endpoint(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
-    name: str | None = Query(None, min_length=1, description="Filter by source name (case-insensitive substring)"),
+    name: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by source name (case-insensitive substring)"),
     source_type: SourceType | None = Query(None, description="Filter by source type enum"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
     db: Session = Depends(get_db),

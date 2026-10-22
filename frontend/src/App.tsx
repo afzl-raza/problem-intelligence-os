@@ -17,6 +17,7 @@ import type {
   ProblemSearchFilters,
   ProblemSearchResponse,
 } from './api/types'
+import { hasActiveFilters } from './api/types'
 import { SearchBar } from './components/SearchBar'
 import { FilterBar } from './components/FilterBar'
 import { ProblemResults } from './components/ProblemResults'
@@ -71,8 +72,7 @@ function App() {
       const results = await searchProblems(query, activeFilters)
       if (requestId !== problemRequest.current) return
       setSearchState(success(results))
-      const unfiltered = !activeFilters.domain && !activeFilters.impact_level
-      if (results.total === 0 && unfiltered) {
+      if (results.total === 0 && !hasActiveFilters(activeFilters)) {
         const check = await spellcheck(query)
         if (requestId === problemRequest.current) setCorrection(check.corrected)
       }
@@ -137,7 +137,7 @@ function App() {
 
   const problemCount = searchState.status === 'success' ? searchState.data.total : null
   const companyCount = companySearchState.status === 'success' ? companySearchState.data.total : null
-  const filtersActive = Boolean(filters.domain || filters.impact_level)
+  const filtersActive = hasActiveFilters(filters)
 
   return (
     <div className="app">

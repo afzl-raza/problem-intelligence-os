@@ -138,3 +138,57 @@ def test_search_blank_query_rejected(client):
 def test_search_whitespace_query_rejected(client):
     res = client.get("/problems/search", params={"q": "   "})
     assert res.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_funding_filter_counts_a_problem_once_even_with_many_matching_companies(client, db_session):
+    seed = {"industry": "Parking", "funding_stage": "seed"}
+    ingest_dataset(db_session, {"entries": [
+        make_entry("Seed One", "Parking gate queues", company=seed),
+        make_entry("Seed Two", "Parking gate queues", company=seed),
+        make_entry("Seed Three", "Parking gate queues", company=seed),
+    ]})
+
+    data = client.get("/problems/search", params={"q": "parking", "funding_stage": "seed"}).json()
+
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
+    assert {f["value"]: f["count"] for f in data["facets"]["funding_stages"]} == {"seed": 1}
+
+
+def test_funding_stage_and_category_facets_count_distinct_problems_before_filters(client, db_session):
+    _seed_filterable(db_session)
+
+    facets = client.get("/problems/search", params={"q": "parking", "funding_stage": "growth"}).json()["facets"]
+
+    # Facets ignore the active filter, so the other stages stay visible.
+    assert {f["value"]: f["count"] for f in facets["funding_stages"]} == {"seed": 1, "growth": 1, "series_a": 1}
+    assert {f["value"]: f["count"] for f in facets["categories"]} == {"Parking": 2, "Payments": 1}
+
+
+def test_filters_combine_across_all_four_dimensions(client, db_session):
+    _seed_filterable(db_session)
+
+    data = client.get("/problems/search", params={
+        "q": "parking",
+        "domain": "parking-management-saas",
+        "category": "parking",
+        "impact_level": "high",
+        "funding_stage": "seed",
+    }).json()
+
+    assert [i["title"] for i in data["items"]] == ["Parking gate queues"]
+    assert data["total"] == 1
+
+
+def test_title_matches_are_highlighted_even_when_the_description_does_not_match(client, db_session):
+    ingest_dataset(db_session, {"entries": [
+        make_entry("Gate Co", "Parking gate queues",
+                   problem={"description": "Drivers wait at exit barriers.", "impact_level": "high"}),
+    ]})
+
+    item = client.get("/problems/search", params={"q": "parking"}).json()["items"][0]
+
+    assert item["title_snippet"] == "\x02Parking\x03 gate queues"
+    assert item["title"] == "Parking gate queues"
+    assert "\x02" not in item["snippet"]
+    assert "<" not in item["title_snippet"]

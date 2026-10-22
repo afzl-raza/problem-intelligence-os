@@ -118,8 +118,9 @@ def search_problems(
     snippet_expr = func.ts_headline(
         "english", func.coalesce(Problem.description, ""), ts_query, _HEADLINE_OPTIONS
     )
+    title_snippet_expr = func.ts_headline("english", Problem.title, ts_query, _HEADLINE_OPTIONS)
     rows = db.execute(
-        select(Problem, rank_expr, snippet_expr)
+        select(Problem, rank_expr, snippet_expr, title_snippet_expr)
         .where(*conditions)
         .order_by(rank_expr.desc(), Problem.id.desc())
         .offset(skip)
@@ -152,15 +153,43 @@ def search_problems(
         .order_by(func.count(Problem.id).desc())
     ).all()
 
+    category_facets = db.execute(
+        select(Problem.category, func.count(Problem.id))
+        .where(text_match, Problem.category.isnot(None))
+        .group_by(Problem.category)
+        .order_by(func.count(Problem.id).desc(), Problem.category)
+    ).all()
+    # Counts distinct problems, so a problem with several companies at the same
+    # stage is counted once per stage, never once per company.
+    funding_facets = db.execute(
+        select(Company.funding_stage, func.count(distinct(Problem.id)))
+        .join(CompanyProblem, CompanyProblem.company_id == Company.id)
+        .join(Problem, Problem.id == CompanyProblem.problem_id)
+        .where(text_match)
+        .group_by(Company.funding_stage)
+        .order_by(func.count(distinct(Problem.id)).desc(), Company.funding_stage)
+    ).all()
+
     return {
         "items": [
-            (row[0], float(row[1]), row[2], domains_by_problem[row[0].id]) for row in rows
+            {
+                "problem": row[0],
+                "score": float(row[1]),
+                "snippet": row[2],
+                "title_snippet": row[3],
+                "domains": domains_by_problem[row[0].id],
+            }
+            for row in rows
         ],
         "total": total,
         "facets": {
             "domains": [{"value": slug, "label": name, "count": count} for slug, name, count in domain_facets],
             "impact_levels": [
                 {"value": level.value, "label": level.value, "count": count} for level, count in impact_facets
+            ],
+            "categories": [{"value": cat, "label": cat, "count": count} for cat, count in category_facets],
+            "funding_stages": [
+                {"value": stage.value, "label": stage.value, "count": count} for stage, count in funding_facets
             ],
         },
     }

@@ -47,6 +47,9 @@ class ProblemMatch(ProblemResponse):
     snippet: str = Field(
         description="Description with matched terms wrapped in \\u0002 (start) and \\u0003 (end) markers. Plain text, never HTML."
     )
+    title_snippet: str = Field(
+        description="Title with matched terms wrapped in \\u0002 (start) and \\u0003 (end) markers. Plain text, never HTML."
+    )
     domains: list[DomainRef]
 
 
@@ -59,6 +62,8 @@ class FacetCount(BaseModel):
 class SearchFacets(BaseModel):
     domains: list[FacetCount]
     impact_levels: list[FacetCount]
+    categories: list[FacetCount]
+    funding_stages: list[FacetCount]
 
 
 class ProblemSearchResponse(BaseModel):

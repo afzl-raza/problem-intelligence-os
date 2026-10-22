@@ -29,6 +29,8 @@ export interface ProblemMatch {
   relevance_score: number
   // Description with matches wrapped in \u0002 ... \u0003 markers; plain text, never HTML.
   snippet: string
+  // Title with matches wrapped in the same markers; render it instead of `title` in result lists.
+  title_snippet: string
   domains: DomainRef[]
 }
 
@@ -42,6 +44,8 @@ export interface FacetCount {
 export interface SearchFacets {
   domains: FacetCount[]
   impact_levels: FacetCount[]
+  categories: FacetCount[]
+  funding_stages: FacetCount[]
 }
 
 // Mirrors backend/app/schemas/problem.py::ProblemSearchResponse
@@ -56,6 +60,12 @@ export interface ProblemSearchResponse {
 export interface ProblemSearchFilters {
   domain?: string
   impact_level?: ImpactLevel
+  category?: string
+  funding_stage?: FundingStage
+}
+
+export function hasActiveFilters(filters: ProblemSearchFilters): boolean {
+  return Object.values(filters).some(Boolean)
 }
 
 // Mirrors backend/app/schemas/company.py::CompanySearchMatch (CompanyResponse + relevance_score)

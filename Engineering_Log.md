@@ -382,3 +382,37 @@ First sprint of the expansion roadmap (3.2 → 4.0). A status review against the
 ### Next Steps:
 - Sprint 3.3: `GET /domains/{slug}/landscape`, a multi-page frontend with `react-router-dom` (domain browse, landscape, problem and company pages), and 2–3 more real researched domains.
 
+
+---
+
+## Sprint 3.2.1 — Hardening and Spec Gaps (2026-10-23)
+
+### Why:
+`PIOS_Search_and_Intelligence_Roadmap.md` (the formal spec for the expansion roadmap) has acceptance criteria that Sprint 3.2 was audited against. The audit found one real bug and three gaps; this fixes all four.
+
+### Found:
+1. **Bug:** a NUL byte in a search query returned HTTP 500 on `/problems/search`, `/companies/search`, and `/search/suggest` (PostgreSQL text cannot contain `\x00`). The same class of 500 existed on every optional text filter (`domain`, `category`, `/companies/resolve?name=`, the company/problem/source list filters). The spec requires malformed input to never cause a database error.
+2. Funding-stage and category filtering existed only in the API, not the UI.
+3. A match in a problem's title was never highlighted (snippets come from the description), so "why did this match?" had no answer for title-only matches.
+4. No tests for malformed input or for funding-stage duplicate counting.
+
+### Learned:
+- My first fix was wrong: the pattern `\S` (and `^[^\x00]*\S[^\x00]*$`) accepts NUL, because NUL is not whitespace — `\S` matches it. Caught by testing the pattern in isolation before trusting it; the correct form requires the non-whitespace character to also be non-NUL: `^[^\x00]*[^\x00\s][^\x00]*$`.
+- Rust-regex (pydantic) has no lookahead, so "no NUL anywhere AND at least one non-blank" has to be expressed structurally rather than with `(?!...)`.
+- Browser console history survives page reloads in the preview pane: a `TypeError` from hot-reloading the already-open page kept reappearing after a fresh load. An in-page `error` listener plus clicking every control is what proved it was stale.
+
+### Solved:
+- `app/api/deps.py` (previously an empty placeholder) now holds a shared `SearchQuery` type and a `NO_NUL_PATTERN` constant, applied to every search endpoint and every optional text filter. Bad input is a clean `422`. Search queries now also have a 200-character cap.
+- `GET /problems/search` returns two new facets (`categories`, `funding_stages`) and a `title_snippet`. Funding-stage facets count distinct problems, so a problem with three seed-stage companies counts once.
+- Frontend: Category and Company stage chip groups, highlighted titles, one `hasActiveFilters` helper replacing two hand-written checks.
+- Tests: `test_input_hardening.py` (NUL on all four search endpoints and nine filter parameters, eight malformed-but-legal queries on each endpoint, length limit, punctuation-only) plus four additions to `test_problem_search.py` (funding dedupe, facet counting, four-way filter combination, title-only highlight).
+
+### Tests:
+- Backend **138/138 PASSED** (79 prior + 59 new, mostly parametrized). Before the fix, 10 of 11 NUL probe URLs returned 500 (only `/search/spellcheck` survived, because it never sends the raw query to the database); after, every NUL case is 422 and every legal-but-odd input is 200.
+- Frontend: `tsc -b`, `oxlint`, and `npm run build` clean.
+- Browser: highlighted titles; Category filter narrows 4 → 2 with other facet counts intact; stacked Impact + Company stage + Category, Clear filters, and tab switching produced zero page errors.
+
+### Known limitations:
+- A match on `category` alone is not highlighted (category text is shown unhighlighted in the card).
+- NUL bytes inside JSON request bodies (create/update endpoints) were not examined in this pass.
+- Transposition typos such as `payemnt` are still not corrected.

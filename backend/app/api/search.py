@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.api.deps import SearchQuery
 from app.db.session import get_db
 from app.schemas.search import SpellcheckResponse, Suggestion
 from app.services.search import spellcheck, suggest
@@ -21,7 +22,7 @@ router = APIRouter(
     ),
 )
 def suggest_endpoint(
-    q: str = Query(..., min_length=1, max_length=200, pattern=r"\S", description="Partial or misspelled query"),
+    q: SearchQuery,
     limit: int = Query(8, ge=1, le=20, description="Maximum suggestions to return"),
     db: Session = Depends(get_db),
 ):
@@ -38,7 +39,7 @@ def suggest_endpoint(
     ),
 )
 def spellcheck_endpoint(
-    q: str = Query(..., min_length=1, max_length=200, pattern=r"\S", description="Query to check"),
+    q: SearchQuery,
     db: Session = Depends(get_db),
 ):
     return spellcheck(db=db, query=q)

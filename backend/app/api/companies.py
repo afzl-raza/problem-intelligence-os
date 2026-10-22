@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import NO_NUL_PATTERN, SearchQuery
 from app.db.session import get_db
 from app.models.company import FundingStage
 from app.schemas.company import (
@@ -57,9 +58,9 @@ def create_company_endpoint(
 def list_companies(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
-    name: str | None = Query(None, min_length=1, description="Filter by company name (case-insensitive substring)"),
-    industry: str | None = Query(None, min_length=1, description="Filter by industry (case-insensitive substring)"),
-    country: str | None = Query(None, min_length=1, description="Filter by country (case-insensitive substring)"),
+    name: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by company name (case-insensitive substring)"),
+    industry: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by industry (case-insensitive substring)"),
+    country: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by country (case-insensitive substring)"),
     funding_stage: FundingStage | None = Query(None, description="Filter by funding stage enum"),
     db: Session = Depends(get_db),
 ):
@@ -85,7 +86,7 @@ def list_companies(
     ),
 )
 def search_companies_endpoint(
-    q: str = Query(..., min_length=1, pattern=r"\S", description="Search query (supports \"phrases\", OR, -exclusion)"),
+    q: SearchQuery,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
     funding_stage: FundingStage | None = Query(None, description="Filter by funding stage"),
@@ -106,7 +107,7 @@ def search_companies_endpoint(
     ),
 )
 def resolve_company_duplicates_endpoint(
-    name: str = Query(..., min_length=1, description="Candidate company name to check for duplicates"),
+    name: str = Query(..., min_length=1, pattern=NO_NUL_PATTERN, description="Candidate company name to check for duplicates"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of candidate matches to return"),
     min_similarity: float = Query(0.3, ge=0.0, le=1.0, description="Minimum trigram similarity score (0-1) for fuzzy matches"),
     db: Session = Depends(get_db),
