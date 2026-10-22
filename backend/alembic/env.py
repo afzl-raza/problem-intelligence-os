@@ -15,6 +15,15 @@ from app.db.base import Base
 from app.models import Company
 from app.core.config import settings
 
+from app.db.base import Base
+
+from app.models.company import Company  # noqa: F401, E402
+from app.models.problem import Problem  # noqa: F401, E402
+from app.models.company_problem import CompanyProblem  # noqa: F401, E402
+from app.models.source import Source  # noqa: F401, E402
+from app.models.evidence import EvidenceRecord  # noqa: F401, E402
+from app.models.ingestion_run import IngestionRun  # noqa: F401, E402
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

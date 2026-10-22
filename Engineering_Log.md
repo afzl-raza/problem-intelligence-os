@@ -125,6 +125,79 @@
 - **Total Test Suite (Companies + Problems)**: 26/26 PASSED (1.11s)
 
 ### Next Steps:
-- Phase 2.2 — Evidence & Provenance Model (`EvidenceRecord`, source tracking, confidence levels).
-- Phase 2.3 — Problem Extraction & Structuring Schema.
-
+- Complete Evidence & Source Provenance Foundation (Sprint 2.2).
+
+---
+
+## Sprint 2.2 — Evidence & Source Provenance Foundation
+
+### Learned:
+- Provenance separation: `Source` entity (`app/models/source.py`) cataloging data origins decoupled from `EvidenceRecord` entity (`app/models/evidence.py`).
+- Immutability principle for evidence records (`retrieved_at`, `created_at`, intentionally avoiding `updated_at` to preserve historical evidence integrity).
+- Content hashing safeguard: `content_hash` (`VARCHAR(64)`) column for SHA-256 deduplication during future automated ingestion.
+- Multi-enum categorization: `SourceType` (`company_website`, `news_article`, `academic_paper`, `code_repository`, `regulatory_filing`, `startup_database`, `social_media`, `job_posting`, `manual_entry`), `EvidenceType` (`official_doc`, `press_release`, `product_page`, `patent_filing`, `user_review`, `third_party_article`, `job_listing`, `unspecified`), and `ConfidenceLevel` (`high`, `medium`, `low`, `unverified`).
+- Cascade integrity: `ON DELETE CASCADE` for company/problem entity deletions and `ON DELETE SET NULL` for source deletions.
+
+### Problems:
+- Preserved existing database indexes and ensured full test suite isolation when adding multi-table truncations in `conftest.py`.
+
+### Solved:
+- Created `Source` and `EvidenceRecord` models and registered them in `app/db/base.py`.
+- Generated Alembic migration `b778d59966af_create_sources_and_evidence_records.py` and executed `alembic upgrade head`.
+- Implemented Pydantic schemas in `app/schemas/source.py` and `app/schemas/evidence.py`.
+- Built repositories (`app/repositories/source.py`, `app/repositories/evidence.py`) and services (`app/services/source.py`, `app/services/evidence.py`).
+- Created FastAPI routers (`app/api/sources.py`, `app/api/evidence.py`) and registered them in `app/main.py`.
+- Built key provenance endpoint: `GET /problems/{problem_id}/companies/{company_id}/evidence` returning verifiable proof items backing any company-problem link.
+- Implemented 7 new automated tests in `tests/test_evidence.py` verifying Source CRUD, Evidence CRUD, link evidence queries, `SET NULL` source deletion, and `CASCADE` company deletion.
+
+### Tests:
+- `test_create_source_success`: PASSED (201 Created)
+- `test_list_sources_pagination_filtering`: PASSED (200 OK by source_type & name)
+- `test_create_evidence_success`: PASSED (201 Created with content_hash)
+- `test_create_evidence_invalid_company_or_problem`: PASSED (404 Not Found)
+- `test_get_evidence_for_link`: PASSED (200 OK — company-problem link provenance)
+- `test_delete_source_sets_evidence_source_id_to_null`: PASSED (SET NULL cascade)
+- `test_delete_company_cascades_and_removes_evidence`: PASSED (CASCADE cleanup)
+- **Total Test Suite (Companies + Problems + Evidence)**: 33/33 PASSED (2.28s)
+
+### Next Steps:
+- Sprint 2.4 — Entity Resolution, Deduplication Pipeline & Search/Discovery Engine.
+
+---
+
+## Sprint 2.3 — Multi-Source Ingestion & Evidence Ingestion Foundation
+
+### Learned:
+- Pristine Base architecture: Model discovery for migrations performed in `alembic/env.py` without modifying `app/db/base.py`.
+- Composite database unique constraints: Enforcing `uq_evidence_company_problem_hash` over `(company_id, problem_id, content_hash)` at PostgreSQL level.
+- Service-level target validation: Explicitly verifying `CompanyProblem` link existence and optional `source_id` validity before `IngestionRun` record creation to return clean HTTP 404 responses instead of database foreign key errors.
+- Security & SSRF Protection: Implementing DNS resolution checks blocking loopback (`127.0.0.1`, `localhost`), private IPv4 (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and link-local IPs (`169.254.169.254`).
+- Metric-rich job tracking: Tracking `items_extracted`, `items_ingested`, and `items_skipped` in `IngestionRun` model with `ON DELETE SET NULL` cascade behavior.
+
+### Solved:
+- Implemented `IngestionRun` model (`app/models/ingestion_run.py`) and generated Alembic migration `5ddb51966a53_create_ingestion_runs_and_evidence_unique_constraint.py`.
+- Built SSRF security validator (`app/utils/security.py`) and centralized SHA-256 text normalizer (`app/utils/deduplication.py`).
+- Implemented collector framework (`app/collectors/`) with `RSSCollector`, `WebCollector`, and `APICollector`.
+- Created `IngestionService` (`app/services/ingestion.py`) validating company-problem link existence, validating optional cataloged `source_id`, extracting content, deduplicating via content hashes, and tracking run completion metrics.
+- Built FastAPI router `app/api/ingestion.py` providing `POST /ingestion/rss`, `POST /ingestion/web`, `POST /ingestion/api`, `GET /ingestion/runs`, and `GET /ingestion/runs/{run_id}`.
+- Added 11 automated integration tests in `tests/test_ingestion.py` covering RSS/Web/API parsing, SSRF security blocks, link & source validation, duplicate skipping, DB composite unique constraints, source deletion `SET NULL`, and run pagination.
+
+### Tests:
+- `test_validate_safe_url_ssrf_protection`: PASSED (Blocks loopback, private, link-local IPs)
+- `test_rss_collector_ingestion_success`: PASSED (201 Created with metrics)
+- `test_web_collector_ingestion_success`: PASSED (201 Created with metrics)
+- `test_api_collector_ingestion_success`: PASSED (201 Created with metrics)
+- `test_ssrf_endpoint_protection`: PASSED (400 Bad Request on internal IP requests)
+- `test_ingestion_invalid_company_problem_link`: PASSED (404 Not Found on invalid link)
+- `test_ingestion_invalid_source_id`: PASSED (404 Not Found on invalid source UUID)
+- `test_ingestion_duplicate_skipping`: PASSED (Items ingested=0, items skipped=1 on duplicate run)
+- `test_db_composite_unique_constraint`: PASSED (Database IntegrityError on duplicate insert)
+- `test_source_deletion_sets_ingestion_run_source_id_to_null`: PASSED (SET NULL cascade)
+- `test_list_ingestion_runs_pagination_filtering`: PASSED (200 OK envelope)
+- **Total Test Suite (Companies + Problems + Evidence + Ingestion)**: 44/44 PASSED (3.99s)
+
+### Next Steps:
+- Complete Stage 5 (Sprint 2.4): Entity Resolution & Deduplication Pipeline.
+
+
+

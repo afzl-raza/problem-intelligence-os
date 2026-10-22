@@ -4,6 +4,13 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
+from app.models.company import Company  # noqa: F401
+from app.models.problem import Problem  # noqa: F401
+from app.models.company_problem import CompanyProblem  # noqa: F401
+from app.models.source import Source  # noqa: F401
+from app.models.evidence import EvidenceRecord  # noqa: F401
+from app.models.ingestion_run import IngestionRun  # noqa: F401
+
 from app.db.session import get_db
 from app.main import app
 
@@ -16,6 +23,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database():
     """Ensure all database schema tables exist in problem_intelligence_test."""
+    Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     yield
     # Tables are retained for fast test runs, individual test cleanup truncates rows.
@@ -25,8 +33,9 @@ def setup_test_database():
 def clean_database():
     """Truncate tables before each test to ensure test isolation."""
     with test_engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE companies, problems RESTART IDENTITY CASCADE;"))
+        conn.execute(text("TRUNCATE TABLE companies, problems, sources, evidence_records, ingestion_runs RESTART IDENTITY CASCADE;"))
         conn.commit()
+
 
     yield
 

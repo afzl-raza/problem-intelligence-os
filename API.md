@@ -33,32 +33,33 @@
 | `GET` | `/problems/{problem_id}/companies` | `200 OK` | Get all companies attempting to solve a problem |
 | `GET` | `/companies/{company_id}/problems` | `200 OK` | Get all problems addressed by a specific company |
 
----
+### Data Sources
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/sources` | `201 Created` | Register a new data source catalog entry |
+| `GET` | `/sources` | `200 OK` | List data sources with pagination & filtering |
+| `GET` | `/sources/{source_id}` | `200 OK` | Retrieve details for a specific data source |
+| `PATCH` | `/sources/{source_id}` | `200 OK` | Update metadata for a data source |
+| `DELETE` | `/sources/{source_id}` | `204 No Content` | Delete a data source (sets `source_id` to NULL in evidence) |
 
-## Endpoint Response Envelopes
+### Evidence & Provenance
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/evidence` | `201 Created` | Record verifiable evidence for a company-problem link |
+| `GET` | `/evidence` | `200 OK` | List evidence records with pagination & filters |
+| `GET` | `/evidence/{evidence_id}` | `200 OK` | Retrieve single evidence record details |
+| `PATCH` | `/evidence/{evidence_id}` | `200 OK` | Update an evidence record |
+| `DELETE` | `/evidence/{evidence_id}` | `204 No Content` | Delete an evidence record |
+| `GET` | `/problems/{problem_id}/companies/{company_id}/evidence` | `200 OK` | Get all supporting evidence records for a company-problem link |
 
-### `GET /problems`
-Query Parameters: `skip` (min 0), `limit` (1-100), `title`, `category`, `impact_level` enum (`low`, `medium`, `high`, `critical`, `unknown`).
-
-```json
-{
-  "items": [
-    {
-      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "title": "Cross-Border Payment Settlement Latency",
-      "description": "B2B payment processing delays in LatAm region.",
-      "category": "FinTech",
-      "domain_tags": ["fintech", "payments", "latam"],
-      "impact_level": "high",
-      "created_at": "2026-08-28T00:18:12.689639Z",
-      "updated_at": "2026-08-28T00:18:12.689639Z"
-    }
-  ],
-  "total": 1,
-  "skip": 0,
-  "limit": 20
-}
-```
+### Multi-Source Ingestion
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/ingestion/rss` | `201 Created` | Trigger RSS/Atom XML feed fetch, parse, deduplicate & store evidence |
+| `POST` | `/ingestion/web` | `201 Created` | Trigger Web HTML document scrape, extract main text, deduplicate & store evidence |
+| `POST` | `/ingestion/api` | `201 Created` | Trigger JSON REST API feed parse, deduplicate & store evidence |
+| `GET` | `/ingestion/runs` | `200 OK` | List ingestion job runs with pagination & filtering (`source_id`, `status`, `ingestion_type`) |
+| `GET` | `/ingestion/runs/{run_id}` | `200 OK` | Retrieve detailed execution metrics and audit details for a run |
 
 ---
 
