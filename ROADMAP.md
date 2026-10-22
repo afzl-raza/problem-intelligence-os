@@ -10,8 +10,10 @@ Stage 4: Multi-Source Ingestion & Evidence Ingestion Foundation (COMPLETE — Sp
 Stage 5: Entity Resolution & Deduplication Pipeline (COMPLETE — Sprint 2.4)
 Stage 6: Search, Filtering & Similarity Engine (IN PROGRESS — Sprint 2.5 COMPLETE: problem full-text search)
 Stage 7: Opportunity Intelligence & Whitespace Signal Detection
-Stage 8: Global Platform & Interactive UI Dashboard
+Stage 8: Global Platform & Interactive UI Dashboard (STARTED — Sprint 3.0: demo frontend)
 ```
+
+Note: campus-recruiting timeline pressure (see `Engineering_Log.md`'s Sprint 3.0 entry) moved the first slice of Stage 8 ahead of Stage 7 — a working, clickable frontend was judged more important to have sooner than whitespace detection, which remains open.
 
 ---
 
@@ -70,3 +72,10 @@ Stage 8: Global Platform & Interactive UI Dashboard
 - [ ] Semantic/embeddings search (deferred — tied to the already-stubbed `OPENAI_API_KEY`; requires a pgvector-enabled Postgres image)
 - [ ] Company search beyond name-substring filtering
 - [ ] Whitespace opportunity signal detection
+
+### Phase 7: Demo Frontend (Sprint 3.0) [DONE] — first slice of Stage 8
+- [x] React + Vite + TypeScript SPA (`frontend/`), read-only, no router: search → companies → evidence
+- [x] `CORS_ORIGINS` config + `CORSMiddleware` (GET-only, explicit origins, no wildcard)
+- [x] Typed API client against the real response schemas, with explicit loading/empty/error states
+- [x] Idempotent, domain-agnostic research-ingestion tool (`backend/scripts/ingest_research_data.py` + `scripts/research_data/*.json`): real companies found via WebSearch, evidence faithfully paraphrased from each company's own official page via WebFetch, `is_verified=False` / `confidence_score=unverified` to flag illustrative data. Two datasets shipped: the founding demo (Stripe/Linear/Plaid/Notion) and Parking Management SaaS (Metropolis, ParkMobile, Passport, T2 Systems). Covering a new domain is "add a JSON file," not "write new code."
+- [ ] Data-entry forms, authentication, deployment, dashboards — explicitly out of scope for this sprint

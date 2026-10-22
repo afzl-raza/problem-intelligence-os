@@ -1,0 +1,98 @@
+{
+  "domain": "Founding demo (Sprint 3.0)",
+  "researched_on": "2026-10-23",
+  "entries": [
+    {
+      "company_name": "Stripe",
+      "company": {
+        "industry": "Payments infrastructure",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://stripe.com"
+      },
+      "problem_title": "Cross-border payment settlement complexity",
+      "problem": {
+        "description": "Businesses accepting international payments face fragmented currency acquiring, multi-currency settlement, and FX overhead when operating across many countries.",
+        "category": "Fintech / Payments",
+        "impact_level": "high"
+      },
+      "source_name": "Stripe -- Official Website (seed/illustrative)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://stripe.com"
+      },
+      "source_url": "https://stripe.com/payments",
+      "evidence_text": "Stripe offers flexible cross-border payment options available in 195 countries across 135+ currencies, with local acquiring coverage in 46 markets, and supports multi-currency settlement that lets businesses hold and pay out funds in different currencies to reduce currency-management costs.",
+      "relationship_note": "Official product page (seed/illustrative, unverified): payments infrastructure is this company's primary focus."
+    },
+    {
+      "company_name": "Linear",
+      "company": {
+        "industry": "Developer tools / Project management",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://linear.app"
+      },
+      "problem_title": "Issue tracking and software workflow overhead",
+      "problem": {
+        "description": "Software teams lose time to manual issue triage, status updates, and coordination across planning, roadmaps, and code review.",
+        "category": "Developer Tools",
+        "impact_level": "medium"
+      },
+      "source_name": "Linear -- Official Website (seed/illustrative)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://linear.app"
+      },
+      "source_url": "https://linear.app",
+      "evidence_text": "Linear describes itself as \"the product development system for teams and agents,\" turning customer feedback into issues that are automatically sorted and assigned, tracked through statuses like Backlog, Todo, In Progress, and Done, alongside roadmap planning and code review tools.",
+      "relationship_note": "Official product page (seed/illustrative, unverified): issue tracking and workflow are this company's primary focus."
+    },
+    {
+      "company_name": "Plaid",
+      "company": {
+        "industry": "Fintech infrastructure",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://plaid.com"
+      },
+      "problem_title": "Fragmented bank account connectivity for fintech apps",
+      "problem": {
+        "description": "Fintech apps need a reliable way to connect to users' bank and financial accounts without building and maintaining integrations to every individual institution.",
+        "category": "Fintech Infrastructure",
+        "impact_level": "high"
+      },
+      "source_name": "Plaid -- Official Website (seed/illustrative)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://plaid.com"
+      },
+      "source_url": "https://plaid.com",
+      "evidence_text": "Plaid provides APIs that let developers connect apps to users' financial data in real time via the Plaid Network, handling the underlying data connectivity while letting users control which apps can access their financial accounts.",
+      "relationship_note": "Official product page (seed/illustrative, unverified): bank account connectivity is this company's primary focus."
+    },
+    {
+      "company_name": "Notion",
+      "company": {
+        "industry": "Productivity / Collaboration software",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://www.notion.com"
+      },
+      "problem_title": "Consolidating team knowledge into a single system of record",
+      "problem": {
+        "description": "Teams accumulate documents, notes, and decisions across many disconnected tools, making it hard to find an authoritative answer to a question later.",
+        "category": "Productivity / Collaboration",
+        "impact_level": "medium"
+      },
+      "source_name": "Notion -- Official Website (seed/illustrative)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.notion.com"
+      },
+      "source_url": "https://www.notion.com/product",
+      "evidence_text": "Notion's Capture feature is described as a way to \"bring everything into one system of record,\" with its Find feature surfacing answers with citations across that consolidated knowledge base.",
+      "relationship_note": "Official product page (seed/illustrative, unverified): consolidating team knowledge is this company's primary focus."
+    }
+  ]
+}

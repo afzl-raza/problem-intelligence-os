@@ -52,6 +52,22 @@ Tests run on an isolated test database (`problem_intelligence_test`):
 .venv\Scripts\python.exe -m pytest tests/test_companies.py -v
 ```
 
+### 5. Ingest Research Data (optional)
+Populates real companies/problems/evidence for the demo frontend from `backend/scripts/research_data/*.json` (safe to run repeatedly — idempotent, never clears data). No company/problem data is hardcoded in the script itself — each JSON file is a real research pass (WebSearch to find real companies, WebFetch against each one's own official page to extract faithful evidence), and covering a new domain means adding a new JSON file, not writing new code:
+```bash
+cd backend
+.venv\Scripts\python.exe scripts\ingest_research_data.py scripts\research_data\founding_demo.json
+.venv\Scripts\python.exe scripts\ingest_research_data.py scripts\research_data\parking_management_saas.json
+```
+
+### 6. Run the Demo Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) with the backend running — search a problem, see who's attacking it, click through to the evidence behind the claim.
+
 ---
 
 ## Documentation

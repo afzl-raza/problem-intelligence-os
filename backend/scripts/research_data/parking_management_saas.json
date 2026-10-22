@@ -1,0 +1,99 @@
+{
+  "domain": "Parking Management SaaS",
+  "researched_on": "2026-10-23",
+  "research_method": "WebSearch to identify real, operating companies in the parking-management space, followed by WebFetch against each company's own official site to extract a faithful summary of what that specific page states. No evidence_text here is recalled from training data -- every entry was checked live during this research pass.",
+  "entries": [
+    {
+      "company_name": "Metropolis Technologies",
+      "company": {
+        "industry": "Smart parking / Computer vision",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://www.metropolis.io"
+      },
+      "problem_title": "Manual checkout friction at parking facilities",
+      "problem": {
+        "description": "Staffed and gated parking facilities require drivers to stop for a manual checkout/payment step on exit, creating friction, queues, and labor overhead at scale.",
+        "category": "Smart Parking / Computer Vision",
+        "impact_level": "high"
+      },
+      "source_name": "Metropolis Technologies -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.metropolis.io"
+      },
+      "source_url": "https://www.metropolis.io",
+      "evidence_text": "Metropolis uses computer vision technology to enable checkout-free parking, letting vehicles drive in and out without a manual checkout step, and the company states it operates over 4,500 parking locations across North America.",
+      "relationship_note": "Official website (researched, unverified): checkout-free parking via computer vision is this company's primary focus."
+    },
+    {
+      "company_name": "ParkMobile",
+      "company": {
+        "industry": "Mobile parking payments",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://parkmobile.io"
+      },
+      "problem_title": "Finding and paying for parking as a driver",
+      "problem": {
+        "description": "Drivers looking for street, garage, airport, or event parking lack a consistent way to locate, reserve, and pay for a spot without physical meters or cash.",
+        "category": "Consumer Parking Payments",
+        "impact_level": "medium"
+      },
+      "source_name": "ParkMobile -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://parkmobile.io"
+      },
+      "source_url": "https://parkmobile.io",
+      "evidence_text": "ParkMobile's app lets drivers find and pay for parking, or reserve a spot in advance, through a flow of choosing a zone, setting a time, selecting a vehicle, and paying -- so they can avoid, in the app's own words, \"running back to feed the meter.\"",
+      "relationship_note": "Official website (researched, unverified): consumer parking discovery and payment is this company's primary focus."
+    },
+    {
+      "company_name": "Passport",
+      "company": {
+        "industry": "Curb & parking enforcement infrastructure",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://passportinc.com"
+      },
+      "problem_title": "Curb and parking enforcement for cities",
+      "problem": {
+        "description": "Cities need to issue and manage digital parking permits, enforce violations (including via license-plate recognition), process payments, and report on curb usage, typically across legacy paper-based or fragmented municipal systems.",
+        "category": "Government / Municipal Parking",
+        "impact_level": "high"
+      },
+      "source_name": "Passport -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://passportinc.com"
+      },
+      "source_url": "https://passportinc.com",
+      "evidence_text": "Passport describes itself as providing \"the digital infrastructure that cities need to manage and monetize their most valuable asset, their curb,\" with enforcement tools covering monitoring, issuance, LPR integrations, and appeals, alongside real-time digital permit management, payment processing, and reporting.",
+      "relationship_note": "Official website (researched, unverified): city curb and parking enforcement infrastructure is this company's primary focus."
+    },
+    {
+      "company_name": "T2 Systems",
+      "company": {
+        "industry": "University & municipal parking systems",
+        "country": "United States",
+        "funding_stage": "growth",
+        "website_url": "https://www.t2systems.com"
+      },
+      "problem_title": "Parking permit management and enforcement for universities and municipalities",
+      "problem": {
+        "description": "Universities and municipalities running large parking programs need integrated permit issuance, access/revenue control, and enforcement technology rather than disconnected manual processes.",
+        "category": "Government / Municipal Parking",
+        "impact_level": "medium"
+      },
+      "source_name": "T2 Systems -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.t2systems.com"
+      },
+      "source_url": "https://www.t2systems.com/",
+      "evidence_text": "T2 Systems describes its software as built for universities, municipalities, operators, and businesses, spanning \"parking permit management to parking enforcement technology,\" and states that clients see lower enforcement costs and more citations collected.",
+      "relationship_note": "Official website (researched, unverified): parking permit management and enforcement for universities/municipalities is this company's primary focus."
+    }
+  ]
+}

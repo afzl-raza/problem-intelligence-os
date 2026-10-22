@@ -1,0 +1,154 @@
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.app__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app__header h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.hint {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 auto 32px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.search-bar button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app__panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.panel h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.card-list, .evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+.card--selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.card__header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.card__body {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.card__meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--unverified {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.evidence-item {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-subtle);
+}
+
+.evidence-item a {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent);
+}

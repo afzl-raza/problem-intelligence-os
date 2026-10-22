@@ -70,6 +70,14 @@
 
 ---
 
+## Cross-Origin Access
+`CORS_ORIGINS` (env var, comma-separated) controls which frontend origins may call this API. Local dev default: `http://localhost:5173,http://127.0.0.1:5173` (the Vite dev server). Only `GET` is allowed cross-origin — the demo frontend is read-only.
+
+## Demo Frontend
+A read-only React + Vite SPA (`frontend/`) consumes `GET /problems/search`, `GET /problems/{problem_id}/companies`, and `GET /problems/{problem_id}/companies/{company_id}/evidence` to drive a search → companies → evidence click-through flow. See the root `README.md` for setup, and `backend/scripts/seed_demo_data.py` for idempotent demo data.
+
+---
+
 ## Interactive Documentation
 - **Swagger UI**: `http://127.0.0.1:8000/docs`
 - **ReDoc**: `http://127.0.0.1:8000/redoc`

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 
 from app.api.companies import router as companies_router
@@ -10,6 +11,14 @@ from app.api.ingestion import router as ingestion_router
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=False,
+    allow_methods=["GET"],
+    allow_headers=["*"],
 )
 
 @app.get("/")

@@ -274,3 +274,74 @@
 - Semantic/embeddings search as a Sprint 3+ addition (tied to the already-stubbed `OPENAI_API_KEY`; requires swapping the Postgres Docker image for a pgvector-enabled one).
 - Stage 7: Opportunity Intelligence & Whitespace Signal Detection, built on top of this search layer.
 
+---
+
+## Sprint 3.0 — Demo Frontend (React + Vite)
+
+### Why this sprint, now:
+The project's own context/handoff doc (`problem_intelligence_os_project_context (1).docx`, snapshot 2026-08-27) states the real driving constraint: PIOS needs to be portfolio/interview-ready for campus recruiting within roughly 3-4 months, with "Phase 5 — Productization: frontend, authentication, deployment, monitoring, demo-ready flows" as that doc's own finish line. Confirmed with the user on 2026-10-23 that the deadline is still live with roughly 1-2 months of runway left. Everything through Sprint 2.5 was backend-only, reachable only via Swagger — this sprint makes the already-agreed MVP flow ("search a problem, see who's attacking it, see the evidence") actually visible and clickable.
+
+### Learned:
+- A generated-column-free schema still has real end-to-end verification burden: the three endpoints this frontend drives (`GET /problems/search`, `GET /problems/{problem_id}/companies`, `GET /problems/{problem_id}/companies/{company_id}/evidence`) needed their *exact* response shapes re-verified against live data before writing TypeScript types — one of them (`GET /problems/{problem_id}/companies`) has no `response_model` and returns a plain array of dicts, not a pagination envelope, which the frontend's types had to match exactly rather than assume.
+- A real company plus a real homepage is not evidence that the company addresses a specific problem. Faithfully summarizing what a company's *official product page actually says* (checked via WebFetch during development, not recalled from memory) is the bar for demo evidence to be defensible rather than fabricated.
+- The schema already had the right fields to distinguish illustrative seed data from verified research without inventing a new convention: `Source.is_verified=False` and `EvidenceRecord.confidence_score=ConfidenceLevel.UNVERIFIED`. The frontend surfaces this directly ("Unverified / illustrative" badge) rather than only encoding it in the database.
+- An idempotent seed script is just "get-or-create everywhere, never truncate": exact `normalized_name` match for companies (reusing Sprint 2.4's `normalize_company_name`), exact `title` match for problems, exact `name` match for sources, the existing `link_company_to_problem` repository function (already upserts `CompanyProblem` links), and the same `(company_id, problem_id, content_hash)` existence check `IngestionService` already uses for evidence.
+- CORS configured as explicit, least-privilege configuration (`CORS_ORIGINS` env var parsed into a list, `allow_methods=["GET"]`, `allow_credentials=False`, no wildcard) rather than a blanket `allow_origins=["*"]` workaround, since this demo frontend only ever reads.
+- `GET /problems/{problem_id}/companies` returning 404 (problem doesn't exist) vs. `200` with an empty array (problem exists, no companies linked yet) are genuinely different states that needed distinct UI handling — collapsing them into one "no results" message would have hidden a real error.
+
+### Problems:
+- Vite's current `react-ts` template ships no default `src/vite-env.d.ts`; `import.meta.env.VITE_API_BASE_URL` needed an explicit `ImportMetaEnv` augmentation for it to type-check.
+- The dev Postgres database already contained unrelated leftover rows from earlier manual testing (`"Test Startup"`, `"string"` — the literal Swagger UI placeholder value) that predate this sprint. Confirmed these are not duplicates produced by the seed script (verified by name and by re-running the script twice with a direct SQL row-count check) — left untouched, since the seed script must never clear data it doesn't own.
+
+### Solved:
+- Added `CORS_ORIGINS` to `Settings` (`app/core/config.py`) and `CORSMiddleware` to `app/main.py`.
+- Scaffolded `frontend/` as a Vite `react-ts` app: typed API client (`src/api/client.ts`, `types.ts`, `fetchState.ts`), an orchestrator-only `App.tsx`, and four presentational components (`SearchBar`, `ProblemResults`, `CompanyList`, `EvidencePanel`) each owning their own loading/empty/error rendering.
+- Built `backend/scripts/seed_demo_data.py`: four real, recognizable companies (Stripe, Linear, Plaid, Notion) linked to real-world problems they're known to address, with evidence text faithfully paraphrased from each company's actual official product page.
+- Verified idempotency by running the seed script twice and cross-checking row counts directly in Postgres: second run created zero new companies/problems/sources/evidence records.
+- Verified the full flow in an actual browser (Browser tool): search → ranked results → company panel (funding stage, relationship) → evidence panel (text + working source link + "Unverified / illustrative" badge) — plus the no-results, empty-query-disabled, and network-error states, by briefly stopping the backend mid-session.
+- Confirmed `npm run build` (type-check + production bundle) succeeds cleanly.
+
+### Tests:
+- Backend regression: **57/57 PASSED** (unchanged — only additive CORS config, no endpoint logic touched).
+- Frontend: `npx tsc -b` — PASSED (no type errors). `npm run build` — PASSED (225.92 kB JS bundle, gzip 70.56 kB).
+- Manual browser verification (Browser tool, not automated): search with results, search with no results, empty-query button correctly disabled, network-failure error message, full search → company → evidence click-through with correct funding stage / relationship / evidence text / source link / unverified badge.
+- Seed script idempotency: first run created 4 companies / 4 problems / 4 sources / 4 evidence records / 4 links; second run created 0 of each, confirmed via direct `SELECT count(*)` against the dev database.
+
+### Next Steps:
+- Stage 7: Opportunity Intelligence & Whitespace Signal Detection (deferred in favor of this sprint given the recruiting timeline).
+- Semantic/embeddings search (Sprint 3+, tied to `OPENAI_API_KEY`).
+- Data-entry forms, authentication, and deployment remain explicitly out of scope until a later Productization sprint.
+
+---
+
+## Sprint 3.1 — Generalized, Research-Driven Data Ingestion
+
+### Why this sprint, now:
+Feedback on the Sprint 3.0 demo: four hardcoded companies (Stripe/Linear/Plaid/Notion) didn't demonstrate the system handles an arbitrary problem domain — it only proved the plumbing works for one hand-picked set. The ask: cover a genuinely different domain (parking management SaaS, picked as the test case), with real companies fetched for real, not recalled from memory or invented, and without hardcoding a second one-off script for it.
+
+### Learned:
+- The fix for "don't hardcode" wasn't to avoid writing data down — real evidence has to live somewhere. It was to separate the *data* (one JSON file per researched domain) from the *mechanism* (one domain-agnostic idempotent loader), so a new domain is "do the research, write a JSON file" rather than "write a new Python script."
+- WebSearch is necessary but not sufficient for finding genuinely verifiable companies: an initial broad search ("parking management SaaS companies") surfaced mostly SEO/affiliate directory content (Capterra listings, vendor blogs) for small, thinly-documented players. Targeted follow-up searches for specific, well-known companies (Metropolis, ParkMobile, Passport, T2 Systems) found verifiable official sites with substantive content to faithfully summarize. Broad-then-narrow was the working pattern, not one search.
+- The same WebFetch-then-faithfully-paraphrase discipline from Sprint 3.0 generalizes cleanly to a new domain: one source (Passport's fact-sheet PDF) didn't yield readable text, so that source was swapped for the company's actual homepage rather than filled in from assumption.
+- `impact_level` is an inherently qualitative/judgment field (unlike evidence_text, which must be a faithful quote/paraphrase) — assigning it per researched problem is a defensible editorial judgment, not a fabricated fact, as long as it's not presented as sourced from the page itself.
+
+### Problems:
+- The old `seed_demo_data.py` had the exact four companies, their fields, and their evidence text written directly into Python source — functionally hardcoded even though the content itself was real. Running it again, or extending it, meant editing code.
+
+### Solved:
+- Extracted `scripts/_ingestion_lib.py`: the get-or-create-everywhere, never-truncate logic from Sprint 3.0's seed script, now domain-agnostic (takes plain dicts, not a fixed company list).
+- Replaced `seed_demo_data.py` with `scripts/ingest_research_data.py`, which takes one or more JSON file paths on the command line and contains zero company/problem data itself.
+- Moved the Sprint 3.0 dataset to `scripts/research_data/founding_demo.json` unchanged (still real, still idempotent — re-ran it through the new loader and confirmed it still returns "reused" for every entity).
+- Researched a second, independent domain for real: used `WebSearch` to identify real parking-management companies, then `WebFetch` against each company's own official site (metropolis.io, parkmobile.io, passportinc.com, t2systems.com) to extract faithful, grounded evidence text — written to `scripts/research_data/parking_management_saas.json`, with the research method itself recorded in the file.
+- Ingested both datasets, then re-ran the parking dataset a second time and confirmed via a direct `SELECT count(*)` against Postgres that zero new rows were created (same idempotency guarantee as Sprint 3.0, now proven to hold for a dataset the loader had never seen before this sprint).
+- Verified the frontend picks up the new domain with zero frontend changes: searching "parking management" in the running demo returns all 4 real parking companies, ranked, with working source links back to their real homepages and the same "Unverified / illustrative" honesty badge.
+
+### Tests:
+- Backend regression: **57/57 PASSED** (no application code changed, only `backend/scripts/`).
+- Ingestion idempotency: first run on `parking_management_saas.json` created 4 companies / 4 problems / 4 sources / 4 evidence records; second run created 0 of each. Direct Postgres row counts confirmed no duplicates across both datasets combined (11 companies — 7 pre-existing/unrelated + 4 new — 8 problems, 9 sources, 8 evidence records, 8 links).
+- Manual browser verification: `GET /problems/search?q=parking` and the live frontend both return all 4 new real companies with correct relevance ranking; clicking through to T2 Systems' evidence panel shows the correct faithful evidence text and a working `https://www.t2systems.com/` source link.
+
+### Next Steps:
+- Adding more research-data domains is now just "research it for real, write a JSON file" — no code changes required.
+- A live, on-demand research/discovery feature (user types any topic, the backend performs web research automatically) remains a distinct, much larger decision — new paid search/LLM API infrastructure, anti-hallucination grounding at request time, async job handling — not undertaken in this sprint.
+
