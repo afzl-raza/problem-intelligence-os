@@ -39,6 +39,15 @@
 | :--- | :--- | :--- | :--- |
 | `GET` | `/domains` | `200 OK` | All problem domains (e.g. `parking-management-saas`) with problem and distinct-company counts |
 | `GET` | `/domains/{slug}` | `200 OK` / `404` | A single domain with its counts |
+| `GET` | `/domains/{slug}/landscape` | `200 OK` / `404` | Everything the domain page needs: counts (same source as `/domains`), category / impact / funding distributions, distinct companies (with problems-in-domain), and a paginated problem list (`category`, `impact_level`, `skip`, `limit`) with `company_count`, `evidence_count`, `verified_evidence_count`. Raw counts only — no "gap" labels |
+
+### Entity detail pages
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/problems/{problem_id}/detail` | `200 OK` / `404` | Problem + domains + every linked company, each with its evidence items, source record, and `verification_status` |
+| `GET` | `/companies/{company_id}/detail` | `200 OK` / `404` | Company + every linked problem (with domains), each with evidence items, source record, and `verification_status` |
+
+`verification_status` is `verified` only when the evidence has a cataloged source, that source is `is_verified`, and `confidence_score` is not `unverified`; otherwise `unverified`. The rule lives in one place (`app/services/evidence.py::is_verified_evidence`) and the UI renders it verbatim.
 
 ### Search
 | Method | Endpoint | Status Code | Description |
@@ -86,6 +95,7 @@
 ## Input Validation
 - Search queries (`q` on `/problems/search`, `/companies/search`, `/search/suggest`, `/search/spellcheck`) must contain at least one non-whitespace character, no NUL bytes, and at most 200 characters; otherwise `422`.
 - Optional text filters (`domain`, `category`, `name`, `industry`, `country`, `title`, source `name`) reject NUL bytes with `422`. PostgreSQL text cannot hold `\x00`, so without this check it would surface as a `500`.
+- A value the database itself refuses on create/update (a NUL byte in a JSON body, text longer than its column) is mapped to `422` by an app-level handler; the driver's error text is not echoed.
 - Odd-but-legal queries (punctuation only, unbalanced quotes, bare `OR`/`-`, emoji, SQL-looking text) return `200`, usually with no results.
 
 ## Cross-Origin Access

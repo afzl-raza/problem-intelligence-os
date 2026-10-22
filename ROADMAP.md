@@ -76,6 +76,11 @@ Note: campus-recruiting timeline pressure (see `Engineering_Log.md`'s Sprint 3.0
   - [x] Company full-text search, matching on own profile or linked problems (`GET /companies/search`)
   - [x] Typo-tolerant autocomplete (`GET /search/suggest`) and "did you mean" (`GET /search/spellcheck`)
   - [x] Frontend: filter chips, highlighting, autocomplete, "did you mean", Companies tab
+- [x] **Sprint 3.3 — Domain landscape + navigable product**
+  - [x] `GET /domains/{slug}/landscape`, `GET /problems/{id}/detail`, `GET /companies/{id}/detail`
+  - [x] Single server-side verification rule; the UI renders `verification_status` and never shows unverified research as confirmed
+  - [x] `react-router-dom` pages (search, domains, domain landscape, problem, company); search/filter state in the URL; load-more
+  - [x] Three more researched domains (fleet/logistics, restaurant/POS, clinic/practice management); database `DataError` → 422 handler
 - [ ] Semantic/embeddings search — Sprint 3.4, local open-source model (decided 2026-10-23)
 - [ ] Whitespace opportunity signal detection — Sprint 3.5
 

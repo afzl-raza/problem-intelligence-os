@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import NO_NUL_PATTERN, SearchQuery
 from app.db.session import get_db
+from app.schemas.detail import CompanyDetail
+from app.services.detail import get_company_detail
 from app.models.company import FundingStage
 from app.schemas.company import (
     CompanyCreate,
@@ -226,4 +228,26 @@ def delete_company_endpoint(
     delete_company(
         db=db,
         company=company,
-    )
+    )
+
+@router.get(
+    "/{company_id}/detail",
+    response_model=CompanyDetail,
+    summary="Company detail page data",
+    description=(
+        "A company with every linked problem (and that problem's domains), each "
+        "carrying evidence items, source records, and a server-computed "
+        "verification_status."
+    ),
+)
+def get_company_detail_endpoint(
+    company_id: UUID,
+    db: Session = Depends(get_db),
+):
+    detail = get_company_detail(db=db, company_id=company_id)
+    if detail is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found",
+        )
+    return detail

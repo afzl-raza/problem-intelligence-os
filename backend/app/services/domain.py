@@ -12,7 +12,7 @@ from app.models.problem import Problem
 from app.utils.slug import slugify
 
 
-def _to_response_dict(domain: Domain, problem_count: int, company_count: int) -> dict:
+def to_response_dict(domain: Domain, problem_count: int, company_count: int) -> dict:
     return {
         "id": domain.id,
         "slug": domain.slug,
@@ -37,9 +37,9 @@ def attach_problem_to_domain(db: Session, problem: Problem, domain: Domain) -> b
 
 
 def list_domains(db: Session) -> list[dict]:
-    return [_to_response_dict(*row) for row in list_domains_with_counts_repo(db)]
+    return [to_response_dict(*row) for row in list_domains_with_counts_repo(db)]
 
 
 def get_domain(db: Session, slug: str) -> dict | None:
     row = get_domain_with_counts_repo(db, slug)
-    return _to_response_dict(*row) if row else None
+    return to_response_dict(*row) if row else None

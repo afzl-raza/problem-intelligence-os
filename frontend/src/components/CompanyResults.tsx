@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { FetchState } from '../api/fetchState'
 import type { CompanySearchResponse } from '../api/types'
 import { FUNDING_STAGE_LABELS } from './labels'
@@ -9,25 +10,29 @@ export function CompanyResults({ state }: { state: FetchState<CompanySearchRespo
   if (state.data.items.length === 0) return <p className="hint">No companies matched that search.</p>
 
   return (
-    <ul className="card-list">
-      {state.data.items.map((company) => (
-        <li key={company.id} className="card card--static">
-          <div className="card__header">
-            <h3>{company.name}</h3>
-            <span className="badge">{FUNDING_STAGE_LABELS[company.funding_stage]}</span>
-          </div>
-          <div className="card__meta">
-            {company.industry && <span>{company.industry}</span>}
-            {company.country && <span>{company.country}</span>}
-            <span>relevance {company.relevance_score.toFixed(2)}</span>
-          </div>
-          {company.website_url && (
-            <a className="card__link" href={company.website_url} target="_blank" rel="noreferrer">
-              {company.website_url.replace(/^https?:\/\//, '')} ↗
-            </a>
-          )}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="card-list">
+        {state.data.items.map((company) => (
+          <li key={company.id} className="card">
+            <div className="card__header">
+              <h3>
+                <Link to={`/companies/${company.id}`}>{company.name}</Link>
+              </h3>
+              <span className="badge">{FUNDING_STAGE_LABELS[company.funding_stage]}</span>
+            </div>
+            <div className="card__meta">
+              {company.industry && <span>{company.industry}</span>}
+              {company.country && <span>{company.country}</span>}
+              <span>relevance {company.relevance_score.toFixed(2)}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {state.data.total > state.data.items.length && (
+        <p className="hint">
+          Showing {state.data.items.length} of {state.data.total} companies.
+        </p>
+      )}
+    </>
   )
 }

@@ -1,7 +1,9 @@
 import type {
-  CompanyForProblem,
+  CompanyDetail,
   CompanySearchResponse,
-  EvidenceRecord,
+  DomainLandscape,
+  DomainSummary,
+  ProblemDetail,
   ProblemSearchFilters,
   ProblemSearchResponse,
   SpellcheckResponse,
@@ -50,26 +52,44 @@ export function searchProblems(
   filters: ProblemSearchFilters = {},
   skip = 0,
   limit = 20,
+  signal?: AbortSignal,
 ): Promise<ProblemSearchResponse> {
-  return getJson(`/problems/search?${query({ q, skip, limit, ...filters })}`)
+  return getJson(`/problems/search?${query({ q, skip, limit, ...filters })}`, signal)
 }
 
-export function searchCompanies(q: string, skip = 0, limit = 20): Promise<CompanySearchResponse> {
-  return getJson(`/companies/search?${query({ q, skip, limit })}`)
+export function searchCompanies(
+  q: string,
+  skip = 0,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<CompanySearchResponse> {
+  return getJson(`/companies/search?${query({ q, skip, limit })}`, signal)
 }
 
 export function suggest(q: string, signal?: AbortSignal): Promise<Suggestion[]> {
   return getJson(`/search/suggest?${query({ q, limit: 8 })}`, signal)
 }
 
-export function spellcheck(q: string): Promise<SpellcheckResponse> {
-  return getJson(`/search/spellcheck?${query({ q })}`)
+export function spellcheck(q: string, signal?: AbortSignal): Promise<SpellcheckResponse> {
+  return getJson(`/search/spellcheck?${query({ q })}`, signal)
 }
 
-export function getCompaniesForProblem(problemId: string): Promise<CompanyForProblem[]> {
-  return getJson<CompanyForProblem[]>(`/problems/${problemId}/companies`)
+export function listDomains(signal?: AbortSignal): Promise<DomainSummary[]> {
+  return getJson('/domains', signal)
 }
 
-export function getEvidenceForLink(problemId: string, companyId: string): Promise<EvidenceRecord[]> {
-  return getJson<EvidenceRecord[]>(`/problems/${problemId}/companies/${companyId}/evidence`)
+export function getDomainLandscape(
+  slug: string,
+  filters: { category?: string; impact_level?: string } = {},
+  signal?: AbortSignal,
+): Promise<DomainLandscape> {
+  return getJson(`/domains/${encodeURIComponent(slug)}/landscape?${query({ limit: 100, ...filters })}`, signal)
+}
+
+export function getProblemDetail(id: string, signal?: AbortSignal): Promise<ProblemDetail> {
+  return getJson(`/problems/${encodeURIComponent(id)}/detail`, signal)
+}
+
+export function getCompanyDetail(id: string, signal?: AbortSignal): Promise<CompanyDetail> {
+  return getJson(`/companies/${encodeURIComponent(id)}/detail`, signal)
 }

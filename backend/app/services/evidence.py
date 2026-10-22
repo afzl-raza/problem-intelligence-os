@@ -2,6 +2,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.evidence import ConfidenceLevel, EvidenceRecord, EvidenceType
+from app.models.source import Source
 from app.repositories.company import get_company
 from app.repositories.evidence import (
     create_evidence as create_evidence_repo,
@@ -102,3 +103,20 @@ def get_evidence_for_company_problem(
         company_id=company_id,
         problem_id=problem_id,
     )
+
+
+def is_verified_evidence(confidence_score: ConfidenceLevel, source_is_verified: bool | None) -> bool:
+    """The single definition of whether an evidence item counts as verified.
+
+    Verified requires all of: a cataloged source (`source_is_verified` is not
+    None), that source marked verified, and a confidence score other than
+    `unverified`. Everything that reports verification (detail pages,
+    landscape counts) goes through this, so unverified research can't be
+    shown as confirmed anywhere.
+    """
+    return bool(source_is_verified) and confidence_score != ConfidenceLevel.UNVERIFIED
+
+
+def verification_status(confidence_score: ConfidenceLevel, source: Source | None) -> str:
+    verified = is_verified_evidence(confidence_score, source.is_verified if source is not None else None)
+    return "verified" if verified else "unverified"

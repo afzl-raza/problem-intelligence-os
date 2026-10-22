@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import DataError
+
 from app.core.config import settings
 
 from app.api.companies import router as companies_router
@@ -22,6 +25,17 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(DataError)
+def handle_database_data_error(request: Request, exc: DataError):
+    """A value the database refuses (NUL byte, text longer than its column, ...)
+    is the caller's fault, not a server fault. The raw driver message is not
+    echoed back."""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "A submitted value was rejected: it contains characters or exceeds a length the database does not accept."},
+    )
+
 
 @app.get("/")
 def root():
@@ -46,4 +60,4 @@ def health():
     return {
         "status": "healthy",
     }
-
+

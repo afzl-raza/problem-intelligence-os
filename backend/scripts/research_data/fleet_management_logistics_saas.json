@@ -1,0 +1,96 @@
+{
+  "dataset": "Fleet Management & Logistics SaaS",
+  "default_domains": ["Fleet Management & Logistics SaaS"],
+  "researched_on": "2026-10-23",
+  "research_method": "WebSearch to identify real, operating companies in fleet management / telematics, followed by WebFetch against each company's own official site to extract a faithful summary of what that specific page states. No evidence_text here is recalled from training data -- every entry was checked live during this research pass. Funding stage and country could not be verified from the sources fetched, so every company is recorded as funding_stage 'unknown' with no country.",
+  "entries": [
+    {
+      "company_name": "Samsara",
+      "company": {
+        "industry": "Fleet telematics / Connected operations",
+        "funding_stage": "unknown",
+        "website_url": "https://www.samsara.com"
+      },
+      "problem_title": "Fragmented visibility across fleet, equipment, and field operations",
+      "problem": {
+        "description": "Operators who track vehicles, equipment, drivers, and safety with separate tools lack one view of operations, which makes it harder to reduce accidents and costs.",
+        "category": "Fleet Telematics",
+        "impact_level": "high"
+      },
+      "source_name": "Samsara -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.samsara.com"
+      },
+      "source_url": "https://www.samsara.com",
+      "evidence_text": "Samsara describes a \"Connected Operations Platform\" covering fleet telematics (GPS tracking, routing, fuel, and compliance), equipment and asset tracking, driver and worker tools, and AI-powered dash cams for safety, presented as a way for operators to cut accidents, lower costs, and run more efficiently; the page states figures such as 380k+ accidents prevented and 350+ integrations.",
+      "relationship_note": "Official website (researched, unverified): a connected operations platform for fleets and field operations is this company's primary focus."
+    },
+    {
+      "company_name": "Motive",
+      "company": {
+        "industry": "Fleet management / Driver safety and compliance",
+        "funding_stage": "unknown",
+        "website_url": "https://gomotive.com"
+      },
+      "problem_title": "Manual compliance and fuel-tax reporting for commercial fleets",
+      "problem": {
+        "description": "Commercial fleets must meet driver-hours (ELD) and fuel-tax (IFTA) reporting requirements, which is time-consuming and error-prone when done by hand or across disconnected systems.",
+        "category": "Fleet Compliance",
+        "impact_level": "high"
+      },
+      "source_name": "Motive -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://gomotive.com"
+      },
+      "source_url": "https://gomotive.com",
+      "evidence_text": "Motive presents itself as an integrated operations platform spanning driver safety, fleet management, equipment monitoring, maintenance, spend management, and workforce management, with the headline \"AI that makes your operations safer and more efficient\"; its listed compliance features include ELD and IFTA fuel tax reporting.",
+      "relationship_note": "Official website (researched, unverified): fleet safety, compliance, and operations management is this company's primary focus."
+    },
+    {
+      "company_name": "Geotab",
+      "company": {
+        "industry": "Commercial telematics",
+        "funding_stage": "unknown",
+        "website_url": "https://www.geotab.com"
+      },
+      "problem_title": "Capturing vehicle data to manage safety, maintenance, and EV adoption across a fleet",
+      "problem": {
+        "description": "Fleet managers need position, speed, and idle-time data from every vehicle, and a way to use it for safety, maintenance, compliance, and electric-vehicle management, without stitching together separate systems.",
+        "category": "Fleet Telematics & Data",
+        "impact_level": "medium"
+      },
+      "source_name": "Geotab -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.geotab.com"
+      },
+      "source_url": "https://www.geotab.com",
+      "evidence_text": "Geotab presents \"One Platform - Total Fleet Management,\" offering telematics tools for safety, productivity, maintenance, sustainability and EV management, and compliance with AI-driven insights; its GO device plugs into a vehicle's OBD II port to record position, speed, and idle time, and the page lists over 200 third-party add-ons.",
+      "relationship_note": "Official website (researched, unverified): commercial telematics and fleet management is this company's primary focus."
+    },
+    {
+      "company_name": "Verizon Connect",
+      "company": {
+        "industry": "GPS fleet tracking / Field service",
+        "funding_stage": "unknown",
+        "website_url": "https://www.verizonconnect.com"
+      },
+      "problem_title": "Coordinating dispatch and driver safety from live vehicle location",
+      "problem": {
+        "description": "Businesses with vehicles in the field need live location, route history, and safety monitoring to dispatch work, monitor drivers, and stay compliant, rather than relying on phone calls and paper records.",
+        "category": "Fleet Tracking & Dispatch",
+        "impact_level": "medium"
+      },
+      "source_name": "Verizon Connect -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.verizonconnect.com"
+      },
+      "source_url": "https://www.verizonconnect.com",
+      "evidence_text": "Verizon Connect Reveal is presented as GPS fleet management software covering live map tracking, vehicle route history, geofences, safety scorecards, and AI dashcams, with dispatch coordination through field-service integrations, plus asset tracking, DOT compliance and ELD tools, and AI operational insights.",
+      "relationship_note": "Official website (researched, unverified): GPS fleet tracking and management is this company's primary focus."
+    }
+  ]
+}

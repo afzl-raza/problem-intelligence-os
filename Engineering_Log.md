@@ -416,3 +416,41 @@ First sprint of the expansion roadmap (3.2 → 4.0). A status review against the
 - A match on `category` alone is not highlighted (category text is shown unhighlighted in the card).
 - NUL bytes inside JSON request bodies (create/update endpoints) were not examined in this pass.
 - Transposition typos such as `payemnt` are still not corrected.
+
+---
+
+## Sprint 3.3 — Domain Landscape and Navigable Product (2026-10-23)
+
+### Why:
+Gap analysis against `PIOS_Search_and_Intelligence_Roadmap.md`: 3.2 was met, and 3.3 was the next required step. The goal is to turn search results into an explorable market landscape with shareable, evidence-backed pages. Planned in plan mode first, as the spec requires; scope confirmed with the user (3.3 in detail; three new domains: fleet/logistics, restaurant/POS, clinic/practice management).
+
+### Built:
+- **One verification rule, server-side.** `app/services/evidence.py::is_verified_evidence`: verified only with a cataloged source, a source marked `is_verified`, and a confidence other than `unverified`. Detail pages and the landscape's `verified_evidence_count` both go through it; the UI renders `verification_status` verbatim and has no rule of its own.
+- **Endpoints:** `GET /problems/{id}/detail`, `GET /companies/{id}/detail` (one call per page, evidence with embedded source record), `GET /domains/{slug}/landscape` (counts from the same repository function as `/domains`, so they cannot disagree; category / impact / funding distributions; companies; paginated filterable problem list with company and evidence counts).
+- **`DataError` → 422** handler: NUL bytes in JSON bodies and over-length values were 500s; the driver's message is not echoed.
+- **Frontend:** `react-router-dom` with Search, Domains, Domain, Problem, and Company pages. Search state (`q`, filters, tab) lives in the URL; load-more pagination; a `useFetch` hook that derives loading from a key mismatch and aborts superseded requests; shared `EvidenceItem` / `VerificationBadge` / `DistributionBars` / `FetchView`. The old three-panel flow is replaced by real pages.
+- **Data:** three researched domains ingested, 12 new companies and problems. Total: 7 domains, 20 problems.
+
+### Research quality control:
+Research ran as three parallel passes (WebSearch → WebFetch against each company's own site). Before ingesting, I re-fetched Samsara, NextGen, and Olo and confirmed nine specific claims (e.g. "380k+ accidents prevented", "up to 2.5 hours per day", "Trusted by 90,000+ locations") appear on the live pages. Dropped, not paraphrased from memory: Toast, Lightspeed, and athenahealth (HTTP 403), 7shifts (no content), OpenTable (redirect). Funding stage is `unknown` and country is omitted wherever it wasn't verified.
+
+### Learned:
+- A bash heredoc passed through this tool collapses `\`, so a Python string like `"scripts\research_data"` silently became a carriage return and a substring assertion failed. Anything containing Windows paths is edited with the file-edit tool instead. (The assertion failing was the safety net that caught it.)
+- Browser console history survives navigation in the preview pane, so a stale hot-reload error kept reappearing; an in-page error listener plus exercising every control is the reliable check.
+- Load-more can't be exercised with 20 problems at a page size of 20. I temporarily lowered the page size to 3, drove it to the end (3 → 6 → 9 → 12 → 13, no duplicates, button disappears, a filter change resets the list), then restored 20.
+
+### Known limitations:
+- **Problem framings are editorial.** Each problem's title and description are PIOS's characterization of what a company's page supports (e.g. "manual checkout friction"); only `evidence_text` is a faithful paraphrase. The UI labels evidence as unverified research but not the problem framing as inferred.
+- The domain page's "search within" box hands off to the main search page scoped to the domain, rather than filtering in place.
+- The Companies tab shows the first 20 matches ("Showing 20 of N"); landscape returns up to 100 problems and 200 companies.
+- No automated frontend tests (manual browser verification only).
+- Still open from the audit: a category-only match isn't highlighted; transposition typos aren't corrected.
+
+### Tests:
+- Backend **162/162 PASSED** (138 + 24 new: verification rule, detail endpoints, landscape aggregates / count agreement / filters / pagination / link walk, DataError handler).
+- Frontend: `tsc -b`, `oxlint`, `npm run build` clean.
+- Browser: shared URL `/?q=parking` restores results and facets; domain tag → landscape → problem → company with correct "Unverified research" badges and source labels; back/forward land on the right pages; `/domains` lists 7 domains; 404 and malformed-id pages say "doesn't exist"; unknown route renders Not Found.
+- Ingestion: all five datasets run twice; the second run created nothing; Postgres shows 7 domains with 20 problems, 20 links, 20 problem-domain rows.
+
+### Next:
+Sprint 3.4 (semantic and hybrid search) per the spec's checklist, with its own plan-mode pass.

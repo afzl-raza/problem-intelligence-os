@@ -1,0 +1,96 @@
+{
+  "dataset": "Clinic & Practice Management SaaS",
+  "default_domains": ["Clinic & Practice Management SaaS"],
+  "researched_on": "2026-10-23",
+  "research_method": "WebSearch to identify real, operating companies in clinic and practice management software, followed by WebFetch against each company's own official site to extract a faithful summary of what that specific page states. No evidence_text here is recalled from training data -- every entry was checked live during this research pass. athenahealth (athenahealth.com) was a candidate but returned HTTP 403 to the fetch, so it was dropped rather than described from memory. funding_stage is 'growth' only for Tebra, whose >$1B valuation and $72M+ round were confirmed by search; it is 'unknown' for the others because it was not verified. Country is omitted because it was not verified.",
+  "entries": [
+    {
+      "company_name": "Jane",
+      "company": {
+        "industry": "Practice management software for clinics and practitioners",
+        "funding_stage": "unknown",
+        "website_url": "https://jane.app"
+      },
+      "problem_title": "Fragmented scheduling, charting, and billing in appointment-based clinics",
+      "problem": {
+        "description": "Appointment-based clinics juggle separate tools for booking, clinical notes, payments, and insurance claims, creating back-and-forth with patients, no-shows, and administrative overhead.",
+        "category": "Appointment-based Clinic Management",
+        "impact_level": "medium"
+      },
+      "source_name": "Jane -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://jane.app"
+      },
+      "source_url": "https://jane.app/",
+      "evidence_text": "Jane describes its practice management software as bringing scheduling, charting, billing, payments, and patient communication into \"one connected system,\" with scheduling tools meant to \"reduce back-and-forth and minimize no-shows,\" online booking, AI-powered charting, and tools for payments, billing, invoicing, and insurance claims.",
+      "relationship_note": "Official website (researched, unverified): connected scheduling, charting, and billing for clinics is this company's primary focus."
+    },
+    {
+      "company_name": "SimplePractice",
+      "company": {
+        "industry": "EHR and practice management for health and wellness practices",
+        "funding_stage": "unknown",
+        "website_url": "https://www.simplepractice.com"
+      },
+      "problem_title": "Running a solo or small health practice across notes, billing, and telehealth",
+      "problem": {
+        "description": "Independent practitioners must manage clinical documentation, calendars, insurance billing, and both in-person and virtual sessions, often through disconnected tools.",
+        "category": "Independent Practice EHR",
+        "impact_level": "medium"
+      },
+      "source_name": "SimplePractice -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.simplepractice.com"
+      },
+      "source_url": "https://www.simplepractice.com/",
+      "evidence_text": "SimplePractice describes its EHR software as including \"integrated telehealth, a robust template library, and helpful insurance tools,\" with tools for calendar management, billing, and running in-person and virtual sessions; for psychiatrists it highlights ePrescribe, customizable rate tables, and treatment plans.",
+      "relationship_note": "Official website (researched, unverified): EHR and practice management for independent practitioners is this company's primary focus."
+    },
+    {
+      "company_name": "Tebra",
+      "company": {
+        "industry": "EHR, billing, and patient engagement for independent practices",
+        "funding_stage": "growth",
+        "website_url": "https://www.tebra.com"
+      },
+      "problem_title": "Disconnected clinical, billing, and scheduling systems in independent practices",
+      "problem": {
+        "description": "Independent practices run clinical documentation, claims and payments, scheduling, and patient intake on separate systems that do not work together, adding manual administrative work.",
+        "category": "Independent Practice Operations",
+        "impact_level": "high"
+      },
+      "source_name": "Tebra -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.tebra.com"
+      },
+      "source_url": "https://www.tebra.com/",
+      "evidence_text": "Tebra describes its EHR+ platform as connecting clinical care, billing, and scheduling with built-in AI for documentation and routine administrative work, and lists AI-assisted charting, online scheduling and digital intake, website and review tools, and claims management with patient payments as tools meant to work together rather than as separate systems.",
+      "relationship_note": "Official website (researched, unverified): an integrated EHR, billing, and scheduling platform for independent practices is this company's primary focus."
+    },
+    {
+      "company_name": "NextGen Healthcare",
+      "company": {
+        "industry": "EHR and practice management for ambulatory and specialty practices",
+        "funding_stage": "unknown",
+        "website_url": "https://www.nextgen.com"
+      },
+      "problem_title": "Specialty practices needing workflows tailored to their specialty",
+      "problem": {
+        "description": "Specialty practices need EHR, practice management, patient experience, and revenue-cycle tools configured to each specialty's operations rather than a generic one-size-fits-all setup, plus relief from time spent on clinical documentation.",
+        "category": "Specialty Practice EHR",
+        "impact_level": "medium"
+      },
+      "source_name": "NextGen Healthcare -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.nextgen.com"
+      },
+      "source_url": "https://www.nextgen.com/",
+      "evidence_text": "NextGen describes its platform as delivering \"intelligent workflows across your EHR, practice management, patient experience, and revenue cycle,\" citing \"smart configurations and 2,000+ clinical templates\" for specialty practices, and clinical AI that produces organized notes from recorded visit conversations, which it says can save \"up to 2.5 hours per day.\"",
+      "relationship_note": "Official website (researched, unverified): specialty-tailored EHR and practice management is this company's primary focus."
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "dataset": "Restaurant Management & POS SaaS",
+  "default_domains": ["Restaurant Management & POS SaaS"],
+  "researched_on": "2026-10-23",
+  "research_method": "WebSearch to identify real, operating companies in restaurant management / POS software, followed by WebFetch against each company's own official site to extract a faithful summary of what that specific page states. Toast and Lightspeed were candidates but their official sites returned HTTP 403 to every fetch attempt, so they were dropped rather than described from memory. funding_stage is 'growth' only where a late-stage/large or public company was verified by search (Olo: ~$2B take-private deal reported July 2025; Square: part of Block, Inc., publicly listed); otherwise 'unknown'. country is omitted because it was not verified. No evidence_text here is recalled from training data.",
+  "entries": [
+    {
+      "company_name": "Olo",
+      "company": {
+        "industry": "Restaurant digital ordering & guest engagement",
+        "funding_stage": "growth",
+        "website_url": "https://www.olo.com"
+      },
+      "problem_title": "Fragmented digital ordering and guest journey for restaurant brands",
+      "problem": {
+        "description": "Multi-location restaurant brands must stitch together online ordering, payments, delivery, catering, loyalty, and marketing across separate systems to serve guests consistently.",
+        "category": "Restaurant Digital Ordering & Payments",
+        "impact_level": "high"
+      },
+      "source_name": "Olo -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.olo.com"
+      },
+      "source_url": "https://www.olo.com/",
+      "evidence_text": "Olo describes its platform as one that \"powers the full guest journey,\" spanning online ordering, payments, delivery, catering, loyalty, and marketing, with a payments offering built for restaurants that includes fraud protection, and cites \"Trusted by 90,000+ locations\" and \"Trusted by 800+ top restaurant brands.\"",
+      "relationship_note": "Official website (researched, unverified): digital ordering and guest engagement for restaurant brands is this company's primary focus."
+    },
+    {
+      "company_name": "Square",
+      "company": {
+        "industry": "Restaurant POS & payments",
+        "funding_stage": "growth",
+        "website_url": "https://squareup.com"
+      },
+      "problem_title": "Running different restaurant formats on one simple point-of-sale system",
+      "problem": {
+        "description": "Food businesses of very different types, from quick-service to full-service, bars, bakeries, and food trucks, need payments, orders, online ordering, staffing, and cash-flow tools that work together without complicated setup.",
+        "category": "Restaurant POS & Payments",
+        "impact_level": "medium"
+      },
+      "source_name": "Square -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://squareup.com"
+      },
+      "source_url": "https://squareup.com/us/en/restaurants",
+      "evidence_text": "Square describes its restaurant software as \"Refreshingly easy restaurant tech\" for \"every flavor of food business,\" including quick-service, full-service, bar, coffee shop, bakery, and food truck operations, with listed capabilities covering taking payments, managing orders, online ordering profiles, kiosk ordering, staff scheduling and pay, and cash flow management.",
+      "relationship_note": "Official website (researched, unverified): restaurant POS and payments is this company's primary focus."
+    },
+    {
+      "company_name": "TouchBistro",
+      "company": {
+        "industry": "Restaurant management systems",
+        "funding_stage": "unknown",
+        "website_url": "https://www.touchbistro.com"
+      },
+      "problem_title": "Siloed front-of-house, back-of-house, and guest engagement tools",
+      "problem": {
+        "description": "Restaurants often run front-of-house service, back-of-house operations, and guest engagement on separate tools, making it harder to raise revenue, improve service, and control operating costs.",
+        "category": "Restaurant Management Systems",
+        "impact_level": "medium"
+      },
+      "source_name": "TouchBistro -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.touchbistro.com"
+      },
+      "source_url": "https://www.touchbistro.com/",
+      "evidence_text": "TouchBistro calls itself an \"all-in-one point of sale (POS) and restaurant management system\" built specifically for the foodservice sector, aiming to raise revenue, improve guest service, and reduce operating costs by combining front-of-house, back-of-house, and guest engagement tools on one platform.",
+      "relationship_note": "Official website (researched, unverified): an all-in-one restaurant POS and management system is this company's primary focus."
+    },
+    {
+      "company_name": "SpotOn",
+      "company": {
+        "industry": "Restaurant POS & payments",
+        "funding_stage": "unknown",
+        "website_url": "https://www.spoton.com"
+      },
+      "problem_title": "Restaurant POS downtime during internet outages",
+      "problem": {
+        "description": "When a restaurant's internet connection drops, a cloud-dependent POS can stop taking orders and payments in the middle of service, so restaurants need ordering to keep running offline.",
+        "category": "Restaurant POS Reliability",
+        "impact_level": "high"
+      },
+      "source_name": "SpotOn -- Official Website (researched)",
+      "source": {
+        "source_type": "company_website",
+        "base_url": "https://www.spoton.com"
+      },
+      "source_url": "https://www.spoton.com/restaurants/",
+      "evidence_text": "SpotOn describes its restaurant POS as supporting both full-service and counter-service ordering, and promotes a \"blackout-proof offline mode\" that keeps stations and orders running during internet outages and syncs offline payments once service returns, alongside a single dashboard for menu building, reporting, marketing, multi-location management, and staff tools, plus commission-free online ordering and scheduling.",
+      "relationship_note": "Official website (researched, unverified): restaurant POS with offline resilience is this company's primary focus."
+    }
+  ]
+}

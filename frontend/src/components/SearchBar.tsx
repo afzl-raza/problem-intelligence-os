@@ -7,13 +7,14 @@ interface SearchBarProps {
   value: string
   onChange: (value: string) => void
   onSearch: (query: string) => void
+  onPick: (suggestion: Suggestion) => void
   isLoading: boolean
 }
 
 const DEBOUNCE_MS = 200
 const LISTBOX_ID = 'search-suggestions'
 
-export function SearchBar({ value, onChange, onSearch, isLoading }: SearchBarProps) {
+export function SearchBar({ value, onChange, onSearch, onPick, isLoading }: SearchBarProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   // Only user typing opens the dropdown; programmatic value changes (a picked
   // suggestion, "did you mean") must not pop it back open.
@@ -28,8 +29,7 @@ export function SearchBar({ value, onChange, onSearch, isLoading }: SearchBarPro
     const controller = new AbortController()
     const timer = setTimeout(() => {
       suggest(trimmed, controller.signal)
-        // Domains get their own browse view in a later sprint; offer problems and companies here.
-        .then((results) => setSuggestions(results.filter((s) => s.kind !== 'domain')))
+        .then(setSuggestions)
         .catch(() => setSuggestions([]))
     }, DEBOUNCE_MS)
     return () => {
@@ -56,8 +56,8 @@ export function SearchBar({ value, onChange, onSearch, isLoading }: SearchBarPro
   }
 
   function pick(suggestion: Suggestion) {
-    onChange(suggestion.label)
-    submit(suggestion.label)
+    close()
+    onPick(suggestion)
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {

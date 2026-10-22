@@ -4,7 +4,7 @@
 export type FetchState<T> =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'error'; message: string }
+  | { status: 'error'; message: string; httpStatus?: number }
   | { status: 'success'; data: T }
 
 export const idle: FetchState<never> = { status: 'idle' }
@@ -14,6 +14,6 @@ export function success<T>(data: T): FetchState<T> {
   return { status: 'success', data }
 }
 
-export function failure(message: string): FetchState<never> {
-  return { status: 'error', message }
+export function failure(message: string, httpStatus?: number): FetchState<never> {
+  return { status: 'error', message, httpStatus }
 }

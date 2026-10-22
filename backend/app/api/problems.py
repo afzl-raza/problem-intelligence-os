@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import NO_NUL_PATTERN, SearchQuery
 from app.db.session import get_db
+from app.schemas.detail import ProblemDetail
+from app.services.detail import get_problem_detail
 from app.models.company import FundingStage
 from app.models.problem import ImpactLevel
 from app.schemas.problem import (
@@ -248,3 +250,25 @@ def get_problems_for_company_endpoint(
             detail="Company not found",
         )
     return problems
+
+
+@router.get(
+    "/problems/{problem_id}/detail",
+    response_model=ProblemDetail,
+    summary="Problem detail page data",
+    description=(
+        "A problem with its domains and every linked company, each carrying its "
+        "evidence items, source record, and a server-computed verification_status."
+    ),
+)
+def get_problem_detail_endpoint(
+    problem_id: UUID,
+    db: Session = Depends(get_db),
+):
+    detail = get_problem_detail(db=db, problem_id=problem_id)
+    if detail is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Problem not found",
+        )
+    return detail

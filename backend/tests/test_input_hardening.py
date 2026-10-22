@@ -62,3 +62,20 @@ def test_punctuation_only_query_returns_empty_results(client, db_session):
 
     assert data["items"] == []
     assert data["total"] == 0
+
+
+@pytest.mark.parametrize(
+    "path,body",
+    [
+        ("/companies", {"name": "a\x00b"}),
+        ("/problems", {"title": "x\x00y"}),
+        ("/sources", {"name": "s\x00"}),
+        ("/companies", {"name": "n" * 300}),  # longer than VARCHAR(255): also the caller's fault
+    ],
+)
+def test_values_the_database_rejects_are_422_not_500(client, path, body):
+    res = client.post(path, json=body)
+
+    assert res.status_code == 422, res.text
+    detail = res.json()["detail"]
+    assert "NUL" not in detail and "psycopg" not in detail  # driver internals are not echoed
