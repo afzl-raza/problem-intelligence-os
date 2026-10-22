@@ -2,12 +2,21 @@ from enum import Enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, JSON, String, Text
+from sqlalchemy import Computed, DateTime, JSON, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+# Single source of truth for the generated full-text search column, shared
+# with the Alembic migration that creates it so the model and the DDL can
+# never drift apart.
+PROBLEM_SEARCH_VECTOR_EXPRESSION = (
+    "setweight(to_tsvector('english', coalesce(title, '')), 'A') || "
+    "setweight(to_tsvector('english', coalesce(description, '')), 'B') || "
+    "setweight(to_tsvector('english', coalesce(category, '')), 'C')"
+)
 
 
 class ImpactLevel(str, Enum):
@@ -54,6 +63,12 @@ class Problem(Base):
         nullable=False,
         default=ImpactLevel.UNKNOWN,
         index=True,
+    )
+
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        Computed(PROBLEM_SEARCH_VECTOR_EXPRESSION, persisted=True),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -8,8 +8,10 @@ from app.schemas.problem import (
     CompanyProblemLink,
     CompanyProblemResponse,
     ProblemCreate,
+    ProblemMatch,
     ProblemPaginatedResponse,
     ProblemResponse,
+    ProblemSearchResponse,
     ProblemUpdate,
 )
 from app.services.problem import (
@@ -20,6 +22,7 @@ from app.services.problem import (
     get_problems,
     get_problems_for_company,
     link_company_to_problem,
+    search_problems,
     unlink_company_from_problem,
     update_problem,
 )
@@ -65,6 +68,35 @@ def list_problems_endpoint(
         category=category,
         impact_level=impact_level,
     )
+
+
+@router.get(
+    "/problems/search",
+    response_model=ProblemSearchResponse,
+    summary="Full-text search problems",
+    description=(
+        "Ranked full-text search over problem title/description/category "
+        "using Postgres tsvector/ts_rank. Additive to the exact-filter "
+        "GET /problems endpoint above, not a replacement for it."
+    ),
+)
+def search_problems_endpoint(
+    q: str = Query(..., min_length=1, pattern=r"\S", description="Natural-language search query"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records to return (1 to 100)"),
+    db: Session = Depends(get_db),
+):
+    result = search_problems(
+        db=db,
+        query=q,
+        skip=skip,
+        limit=limit,
+    )
+    result["items"] = [
+        ProblemMatch(**ProblemResponse.model_validate(problem, from_attributes=True).model_dump(), relevance_score=score)
+        for problem, score in result["items"]
+    ]
+    return result
 
 
 @router.get(

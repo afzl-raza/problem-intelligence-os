@@ -12,6 +12,7 @@ from app.repositories.problem import (
     get_problems as get_problems_repo,
     get_problems_for_company as get_problems_for_company_repo,
     link_company_to_problem as link_company_to_problem_repo,
+    search_problems as search_problems_repo,
     unlink_company_from_problem as unlink_company_from_problem_repo,
     update_problem as update_problem_repo,
 )
@@ -54,6 +55,26 @@ def get_problem(
     problem_id: UUID,
 ) -> Problem | None:
     return get_problem_repo(db=db, problem_id=problem_id)
+
+
+def search_problems(
+    db: Session,
+    query: str,
+    skip: int = 0,
+    limit: int = 20,
+) -> dict:
+    items, total = search_problems_repo(
+        db=db,
+        query=query,
+        skip=skip,
+        limit=limit,
+    )
+    return {
+        "items": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 def update_problem(

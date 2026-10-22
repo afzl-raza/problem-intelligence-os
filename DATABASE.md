@@ -8,6 +8,7 @@
 - **ORM**: SQLAlchemy 2.0.51
 - **Driver**: Psycopg 3.3.4 (`postgresql+psycopg://`)
 - **Extensions**: `pg_trgm` (trigram similarity, enabled by migration `665a1bf5fb13`; powers company duplicate detection)
+- **Full-Text Search**: native Postgres `tsvector`/`ts_rank` (no extension required), added by migration `2aba437f9b2a`; powers problem search
 
 ---
 
@@ -23,6 +24,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `b778d59966af` | `create_sources_and_evidence_records` | Sprint 2.2 | Applied |
 | `5ddb51966a53` | `create_ingestion_runs_and_evidence_unique_constraint` | Sprint 2.3 | Applied |
 | `665a1bf5fb13` | `add_company_normalized_name_and_trgm_index` | Sprint 2.4 | Applied |
+| `2aba437f9b2a` | `add_problem_search_vector_and_gin_index` | Sprint 2.5 | Applied |
 
 ---
 
@@ -50,6 +52,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `category` | `VARCHAR(100)` | NULLABLE | `ix_problems_category` | Category taxonomy |
 | `domain_tags` | `JSON` | NULLABLE | No | Tag array |
 | `impact_level` | `VARCHAR/ENUM` | NOT NULL, default `unknown` | `ix_problems_impact_level` | Categorical severity |
+| `search_vector` | `TSVECTOR` | GENERATED ALWAYS AS ... STORED (title weight A, description weight B, category weight C) | `ix_problems_search_vector` (GIN) | Full-text search vector, maintained automatically by Postgres |
 
 ---
 

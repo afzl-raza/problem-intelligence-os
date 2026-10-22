@@ -37,6 +37,17 @@ class ProblemPaginatedResponse(BaseModel):
     limit: int
 
 
+class ProblemMatch(ProblemResponse):
+    relevance_score: float
+
+
+class ProblemSearchResponse(BaseModel):
+    items: list[ProblemMatch]
+    total: int
+    skip: int
+    limit: int
+
+
 class CompanyProblemLink(BaseModel):
     relationship_type: RelationshipType = RelationshipType.PRIMARY_FOCUS
     evidence_summary: str | None = None

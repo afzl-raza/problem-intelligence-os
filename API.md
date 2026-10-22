@@ -24,6 +24,7 @@
 | `GET` | `/problems/{problem_id}` | `200 OK` | Retrieve single problem details |
 | `PATCH` | `/problems/{problem_id}` | `200 OK` | Partially update an existing problem |
 | `DELETE` | `/problems/{problem_id}` | `204 No Content` | Delete a problem record |
+| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category (Postgres `tsvector`/`ts_rank`); additive to the exact-filter list endpoint above |
 
 ### Company ↔ Problem Relationships
 | Method | Endpoint | Status Code | Description |

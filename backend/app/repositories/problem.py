@@ -58,6 +58,35 @@ def get_problem(
     return db.scalar(statement)
 
 
+def search_problems(
+    db: Session,
+    query: str,
+    skip: int = 0,
+    limit: int = 20,
+) -> tuple[list[tuple[Problem, float]], int]:
+    """Ranked full-text search over problems using the generated
+    `search_vector` tsvector column (title/description/category)."""
+    ts_query = func.plainto_tsquery("english", query)
+    rank_expr = func.ts_rank(Problem.search_vector, ts_query)
+
+    base_statement = select(Problem, rank_expr.label("relevance_score")).where(
+        Problem.search_vector.op("@@")(ts_query)
+    )
+
+    count_statement = select(func.count()).select_from(base_statement.subquery())
+    total = db.scalar(count_statement) or 0
+
+    paginated_statement = (
+        base_statement.order_by(rank_expr.desc(), Problem.id.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+
+    rows = db.execute(paginated_statement).all()
+    items = [(row[0], float(row[1])) for row in rows]
+    return items, total
+
+
 def update_problem(
     db: Session,
     problem: Problem,

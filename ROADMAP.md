@@ -7,8 +7,8 @@ Stage 1: Startup & Company Discovery (COMPLETE — Sprint 1.4)
 Stage 2: Problem Entity & Company-Problem Link Layer (COMPLETE — Sprint 2.1)
 Stage 3: Evidence & Source Provenance Layer (COMPLETE — Sprint 2.2)
 Stage 4: Multi-Source Ingestion & Evidence Ingestion Foundation (COMPLETE — Sprint 2.3)
-Stage 5: Entity Resolution & Deduplication Pipeline (IN PROGRESS — Sprint 2.4 COMPLETE: company dedup)
-Stage 6: Search, Filtering & Similarity Engine
+Stage 5: Entity Resolution & Deduplication Pipeline (COMPLETE — Sprint 2.4)
+Stage 6: Search, Filtering & Similarity Engine (IN PROGRESS — Sprint 2.5 COMPLETE: problem full-text search)
 Stage 7: Opportunity Intelligence & Whitespace Signal Detection
 Stage 8: Global Platform & Interactive UI Dashboard
 ```
@@ -55,11 +55,18 @@ Stage 8: Global Platform & Interactive UI Dashboard
 - [x] FastAPI ingestion endpoints: `POST /ingestion/rss`, `POST /ingestion/web`, `POST /ingestion/api`, `GET /ingestion/runs`, `GET /ingestion/runs/{run_id}`
 - [x] Automated test suite in `tests/test_ingestion.py` (43/43 total tests passing)
 
-### Phase 5: Entity Resolution & Deduplication Pipeline (Sprint 2.4) [IN PROGRESS]
+### Phase 5: Entity Resolution & Deduplication Pipeline (Sprint 2.4) [DONE]
 - [x] Cross-source entity resolution & company name fuzzy matching
   - [x] `normalized_name` column + legal-suffix/punctuation normalization (`app/utils/entity_resolution.py`)
   - [x] Postgres `pg_trgm` trigram similarity matching (`app/repositories/company.py::find_similar_companies`)
   - [x] Advisory duplicate-candidate endpoint: `GET /companies/resolve`
   - [x] Transactional merge endpoint: `POST /companies/merge` (reassigns evidence & problem links, preserves existing relationships on collision)
-- [ ] Vector & keyword search engine integration
+
+### Phase 6: Search, Filtering & Similarity Engine (Sprint 2.5) [IN PROGRESS]
+- [x] Keyword/full-text search over problems
+  - [x] Generated `TSVECTOR` column on `problems` (title weight A, description weight B, category weight C), maintained automatically by Postgres
+  - [x] GIN index for fast `@@` lookups
+  - [x] Ranked search endpoint: `GET /problems/search?q=...` (`ts_rank`, paginated, additive to the existing exact-filter `GET /problems`)
+- [ ] Semantic/embeddings search (deferred — tied to the already-stubbed `OPENAI_API_KEY`; requires a pgvector-enabled Postgres image)
+- [ ] Company search beyond name-substring filtering
 - [ ] Whitespace opportunity signal detection
