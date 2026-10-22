@@ -7,6 +7,7 @@
 - **Test Database Name**: `problem_intelligence_test`
 - **ORM**: SQLAlchemy 2.0.51
 - **Driver**: Psycopg 3.3.4 (`postgresql+psycopg://`)
+- **Extensions**: `pg_trgm` (trigram similarity, enabled by migration `665a1bf5fb13`; powers company duplicate detection)
 
 ---
 
@@ -21,6 +22,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `45f4b317ad94` | `create_problems_and_company_problems` | Sprint 2.1 | Applied |
 | `b778d59966af` | `create_sources_and_evidence_records` | Sprint 2.2 | Applied |
 | `5ddb51966a53` | `create_ingestion_runs_and_evidence_unique_constraint` | Sprint 2.3 | Applied |
+| `665a1bf5fb13` | `add_company_normalized_name_and_trgm_index` | Sprint 2.4 | Applied |
 
 ---
 
@@ -31,7 +33,8 @@ Managed strictly via Alembic (`backend/alembic`).
 | Column Name | Data Type | Constraints | Index | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | Primary Key, `uuid4` default | Yes | Unique identifier |
-| `name` | `VARCHAR(255)` | NOT NULL | `ix_companies_name` | Entity primary name |
+| `name` | `VARCHAR(255)` | NOT NULL | `ix_companies_name`, `ix_companies_name_trgm` (GIN, `gin_trgm_ops`) | Entity primary name |
+| `normalized_name` | `VARCHAR(255)` | NOT NULL | `ix_companies_normalized_name` | Lowercased, punctuation-stripped, legal-suffix-stripped name used for exact duplicate detection |
 | `industry` | `VARCHAR(100)` | NULLABLE | `ix_companies_industry` | Primary industry domain |
 | `country` | `VARCHAR(100)` | NULLABLE | `ix_companies_country` | Country location |
 | `funding_stage` | `VARCHAR/ENUM` | NOT NULL, default `unknown` | `ix_companies_funding_stage` | Categorical funding stage |

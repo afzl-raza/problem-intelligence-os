@@ -50,4 +50,21 @@ class CompanyPaginatedResponse(BaseModel):
     items: list[CompanyResponse]
     total: int
     skip: int
-    limit: int
+    limit: int
+
+
+class CompanyMatch(BaseModel):
+    id: UUID
+    name: str
+    similarity_score: float
+    is_exact_match: bool
+
+
+class CompanyMergeRequest(BaseModel):
+    keep_company_id: UUID
+    duplicate_company_id: UUID
+
+
+class CompanyMergeResponse(BaseModel):
+    company: CompanyResponse
+    merged_company_id: UUID

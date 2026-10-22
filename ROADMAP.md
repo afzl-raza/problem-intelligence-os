@@ -6,8 +6,8 @@
 Stage 1: Startup & Company Discovery (COMPLETE — Sprint 1.4)
 Stage 2: Problem Entity & Company-Problem Link Layer (COMPLETE — Sprint 2.1)
 Stage 3: Evidence & Source Provenance Layer (COMPLETE — Sprint 2.2)
-Stage 4: Multi-Source Ingestion & Evidence Ingestion Foundation (IN PROGRESS — Sprint 2.3 COMPLETE)
-Stage 5: Entity Resolution & Deduplication Pipeline (NEXT — Sprint 2.4)
+Stage 4: Multi-Source Ingestion & Evidence Ingestion Foundation (COMPLETE — Sprint 2.3)
+Stage 5: Entity Resolution & Deduplication Pipeline (IN PROGRESS — Sprint 2.4 COMPLETE: company dedup)
 Stage 6: Search, Filtering & Similarity Engine
 Stage 7: Opportunity Intelligence & Whitespace Signal Detection
 Stage 8: Global Platform & Interactive UI Dashboard
@@ -55,7 +55,11 @@ Stage 8: Global Platform & Interactive UI Dashboard
 - [x] FastAPI ingestion endpoints: `POST /ingestion/rss`, `POST /ingestion/web`, `POST /ingestion/api`, `GET /ingestion/runs`, `GET /ingestion/runs/{run_id}`
 - [x] Automated test suite in `tests/test_ingestion.py` (43/43 total tests passing)
 
-### Phase 5: Entity Resolution & Deduplication Pipeline (Sprint 2.4) [NEXT]
-- [ ] Cross-source entity resolution & company name fuzzy matching
+### Phase 5: Entity Resolution & Deduplication Pipeline (Sprint 2.4) [IN PROGRESS]
+- [x] Cross-source entity resolution & company name fuzzy matching
+  - [x] `normalized_name` column + legal-suffix/punctuation normalization (`app/utils/entity_resolution.py`)
+  - [x] Postgres `pg_trgm` trigram similarity matching (`app/repositories/company.py::find_similar_companies`)
+  - [x] Advisory duplicate-candidate endpoint: `GET /companies/resolve`
+  - [x] Transactional merge endpoint: `POST /companies/merge` (reassigns evidence & problem links, preserves existing relationships on collision)
 - [ ] Vector & keyword search engine integration
 - [ ] Whitespace opportunity signal detection

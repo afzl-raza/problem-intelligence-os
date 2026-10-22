@@ -33,6 +33,12 @@
 | `GET` | `/problems/{problem_id}/companies` | `200 OK` | Get all companies attempting to solve a problem |
 | `GET` | `/companies/{company_id}/problems` | `200 OK` | Get all problems addressed by a specific company |
 
+### Company Entity Resolution & Deduplication
+| Method | Endpoint | Status Code | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/companies/resolve` | `200 OK` | Find likely duplicate companies for a candidate name (exact normalized match + Postgres trigram fuzzy match); advisory only |
+| `POST` | `/companies/merge` | `200 OK` | Merge a duplicate company into another: reassigns evidence & problem links, deletes the duplicate (transactional) |
+
 ### Data Sources
 | Method | Endpoint | Status Code | Description |
 | :--- | :--- | :--- | :--- |

@@ -36,6 +36,12 @@ class Company(Base):
         index=True,
     )
 
+    normalized_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True,
+    )
+
     legal_name: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,

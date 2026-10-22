@@ -6,6 +6,9 @@ from app.db.session import get_db
 from app.models.company import FundingStage
 from app.schemas.company import (
     CompanyCreate,
+    CompanyMatch,
+    CompanyMergeRequest,
+    CompanyMergeResponse,
     CompanyPaginatedResponse,
     CompanyResponse,
     CompanyUpdate,
@@ -15,6 +18,8 @@ from app.services.company import (
     delete_company,
     get_companies,
     get_company,
+    merge_companies,
+    resolve_company_duplicates,
     update_company,
 )
 
@@ -64,6 +69,60 @@ def list_companies(
         industry=industry,
         country=country,
         funding_stage=funding_stage,
+    )
+
+
+@router.get(
+    "/resolve",
+    response_model=list[CompanyMatch],
+    summary="Find likely duplicate companies",
+    description=(
+        "Returns ranked candidate companies that may be duplicates of the given "
+        "name: exact normalized-name matches first, then Postgres trigram "
+        "fuzzy matches above the similarity threshold. Advisory only — never "
+        "creates, blocks, or merges anything."
+    ),
+)
+def resolve_company_duplicates_endpoint(
+    name: str = Query(..., min_length=1, description="Candidate company name to check for duplicates"),
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of candidate matches to return"),
+    min_similarity: float = Query(0.3, ge=0.0, le=1.0, description="Minimum trigram similarity score (0-1) for fuzzy matches"),
+    db: Session = Depends(get_db),
+):
+    matches = resolve_company_duplicates(
+        db=db,
+        name=name,
+        limit=limit,
+        min_similarity=min_similarity,
+    )
+    return [
+        CompanyMatch(id=company.id, name=company.name, similarity_score=score, is_exact_match=is_exact)
+        for company, score, is_exact in matches
+    ]
+
+
+@router.post(
+    "/merge",
+    response_model=CompanyMergeResponse,
+    summary="Merge a duplicate company into another",
+    description=(
+        "Reassigns evidence and problem links from `duplicate_company_id` to "
+        "`keep_company_id`, then deletes the duplicate. Transactional: either "
+        "fully applies or leaves both companies untouched."
+    ),
+)
+def merge_companies_endpoint(
+    merge_request: CompanyMergeRequest,
+    db: Session = Depends(get_db),
+):
+    company = merge_companies(
+        db=db,
+        keep_company_id=merge_request.keep_company_id,
+        duplicate_company_id=merge_request.duplicate_company_id,
+    )
+    return CompanyMergeResponse(
+        company=CompanyResponse.model_validate(company, from_attributes=True),
+        merged_company_id=merge_request.duplicate_company_id,
     )
 
 
