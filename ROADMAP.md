@@ -81,7 +81,12 @@ Note: campus-recruiting timeline pressure (see `Engineering_Log.md`'s Sprint 3.0
   - [x] Single server-side verification rule; the UI renders `verification_status` and never shows unverified research as confirmed
   - [x] `react-router-dom` pages (search, domains, domain landscape, problem, company); search/filter state in the URL; load-more
   - [x] Three more researched domains (fleet/logistics, restaurant/POS, clinic/practice management); database `DataError` → 422 handler
-- [ ] Semantic/embeddings search — Sprint 3.4, local open-source model (decided 2026-10-23)
+- [x] **Sprint 3.4 — Semantic and hybrid search**
+  - [x] pgvector on the existing Postgres base (custom Dockerfile, no data migration); `problem_embeddings` table with model name / dimensions / version tracked per row
+  - [x] Local `BAAI/bge-small-en-v1.5` via `fastembed` (no paid API); embedding is an explicit command, stale vectors detected on text or model change
+  - [x] `GET /problems/search?mode=hybrid` (Reciprocal Rank Fusion, keyword hits always kept, filters and facets unchanged), `GET /problems/{id}/related`, `GET /search/semantic/status`; keyword fallback with a note
+  - [x] UI: "Match by meaning" toggle, meaning-match labels, related problems, "signal not proof" notes
+  - [x] Thresholds calibrated with `scripts/eval_semantic.py` on a judged query set (awaiting human review of the judgments)
 - [ ] Whitespace opportunity signal detection — Sprint 3.5
 
 ### Phase 7: Demo Frontend (Sprint 3.0) [DONE] — first slice of Stage 8

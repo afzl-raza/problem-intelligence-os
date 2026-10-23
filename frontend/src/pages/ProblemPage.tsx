@@ -3,6 +3,7 @@ import { getProblemDetail } from '../api/client'
 import { EvidenceList } from '../components/EvidenceItem'
 import { FetchView } from '../components/FetchView'
 import { FUNDING_STAGE_LABELS, RELATIONSHIP_LABELS } from '../components/labels'
+import { RelatedProblems } from '../components/RelatedProblems'
 import { useFetch } from '../hooks/useFetch'
 
 export function ProblemPage() {
@@ -64,6 +65,8 @@ export function ProblemPage() {
                 </ul>
               )}
             </section>
+
+            <RelatedProblems problemId={problem.id} />
           </>
         )}
       </FetchView>

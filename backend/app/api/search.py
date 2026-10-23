@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import SearchQuery
 from app.db.session import get_db
 from app.schemas.search import SpellcheckResponse, Suggestion
+from app.schemas.semantic import SemanticStatus
+from app.services.hybrid_search import get_semantic_status
 from app.services.search import spellcheck, suggest
 
 router = APIRouter(
@@ -43,3 +45,13 @@ def spellcheck_endpoint(
     db: Session = Depends(get_db),
 ):
     return spellcheck(db=db, query=q)
+
+
+@router.get(
+    "/semantic/status",
+    response_model=SemanticStatus,
+    summary="Meaning-based search status",
+    description="Whether meaning-based search can answer queries now, which model it uses, and how many problems are indexed or stale.",
+)
+def semantic_status_endpoint(db: Session = Depends(get_db)):
+    return get_semantic_status(db)

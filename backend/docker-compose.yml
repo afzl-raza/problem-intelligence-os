@@ -1,8 +1,7 @@
-version: "3.9"
-
 services:
   postgres:
-    image: postgres:16
+    build: ../docker/postgres
+    image: pios-postgres:16-pgvector
     container_name: pios_postgres
 
     restart: always

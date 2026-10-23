@@ -50,3 +50,7 @@ htmlcov/
 *.db
 .DS_Store
 Thumbs.db
+
+# Local embedding model cache and database backups
+backend/.model_cache/
+*.dump

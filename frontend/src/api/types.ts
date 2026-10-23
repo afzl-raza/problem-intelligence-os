@@ -32,6 +32,10 @@ export interface ProblemMatch {
   // Title with matches wrapped in the same markers; render it instead of `title` in result lists.
   title_snippet: string
   domains: DomainRef[]
+  // 'semantic' = found by meaning only; 'both' = keyword and meaning agree.
+  match_type: 'keyword' | 'semantic' | 'both'
+  // Cosine similarity for meaning matches: a relevance signal, not proof of equivalence.
+  similarity: number | null
 }
 
 // Mirrors backend/app/schemas/problem.py::FacetCount / SearchFacets
@@ -55,7 +59,12 @@ export interface ProblemSearchResponse {
   skip: number
   limit: number
   facets: SearchFacets
+  mode_used: 'keyword' | 'hybrid'
+  // Set when a hybrid request fell back to keyword results (e.g. semantic search unavailable).
+  semantic_note: string | null
 }
+
+export type SearchMode = 'keyword' | 'hybrid'
 
 export interface ProblemSearchFilters {
   domain?: string
@@ -282,4 +291,19 @@ export interface CompanyDetail {
   founded_year: number | null
   funding_stage: FundingStage
   problems: CompanyProblemDetail[]
+}
+
+// Mirrors backend/app/schemas/semantic.py
+export interface RelatedProblem {
+  id: string
+  title: string
+  category: string | null
+  impact_level: ImpactLevel
+  similarity: number
+  domains: DomainRef[]
+}
+export interface RelatedProblemsResponse {
+  items: RelatedProblem[]
+  semantic_available: boolean
+  min_similarity: number
 }

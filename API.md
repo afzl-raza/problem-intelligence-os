@@ -24,7 +24,7 @@
 | `GET` | `/problems/{problem_id}` | `200 OK` | Retrieve single problem details |
 | `PATCH` | `/problems/{problem_id}` | `200 OK` | Partially update an existing problem |
 | `DELETE` | `/problems/{problem_id}` | `204 No Content` | Delete a problem record |
-| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category. Web-search syntax (`"phrase"`, `OR`, `-exclude`); filters `domain` (slug), `category`, `impact_level`, `funding_stage`; returns `facets` for domain, category, impact level, and company funding stage (distinct-problem counts over the text match, computed before filters), per-item `domains`, and highlighted `title_snippet` / `snippet` (matches wrapped in `\u0002`…`\u0003`, never HTML) |
+| `GET` | `/problems/search` | `200 OK` | Ranked full-text search over problem title/description/category. Web-search syntax (`"phrase"`, `OR`, `-exclude`); filters `domain` (slug), `category`, `impact_level`, `funding_stage`; returns `facets` for domain, category, impact level, and company funding stage (distinct-problem counts over the text match, computed before filters), per-item `domains`, and highlighted `title_snippet` / `snippet` (matches wrapped in `\u0002`…`\u0003`, never HTML) Add `mode=hybrid` to also match by meaning: keyword and semantic candidates (top 50 each; semantic needs cosine similarity >= `SEMANTIC_MIN_SIMILARITY`, default 0.60) are merged with Reciprocal Rank Fusion, so every keyword hit is kept. Each item then carries `match_type` (`keyword` / `semantic` / `both`) and `similarity`; the response carries `mode_used` and, when a hybrid request fell back to keyword results (provider off, nothing indexed, model unavailable), a `semantic_note`. Default `mode=keyword` is unchanged; filters and facets work identically in both modes. |
 
 ### Company ↔ Problem Relationships
 | Method | Endpoint | Status Code | Description |
@@ -54,6 +54,8 @@
 | :--- | :--- | :--- | :--- |
 | `GET` | `/companies/search` | `200 OK` | Ranked full-text company search; a company matches on its own profile **or** through any problem it is linked to. Optional `funding_stage` filter |
 | `GET` | `/search/suggest` | `200 OK` | Autocomplete / typo-tolerant suggestions across problem titles, company names, and domain names (`pg_trgm` word similarity) |
+| `GET` | `/problems/{problem_id}/related` | `200 OK` / `404` | Problems closest in meaning to this one (cosine similarity at or above `RELATED_MIN_SIMILARITY`, default 0.70), excluding itself, best first; `limit` 1-20. `semantic_available=false` with no items when meaning-based search is off or the problem isn't indexed. Similarity is a relevance signal, not proof of equivalence |
+| `GET` | `/search/semantic/status` | `200 OK` | Whether meaning-based search can answer now, the model name and dimensions, thresholds, and how many problems are indexed / stale (`stale` is null while the provider is disabled) |
 | `GET` | `/search/spellcheck` | `200 OK` | "Did you mean" correction against the searchable vocabulary; `corrected` is only set when it differs **and** returns at least one problem |
 
 ### Company Entity Resolution & Deduplication

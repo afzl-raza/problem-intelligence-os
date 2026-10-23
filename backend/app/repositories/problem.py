@@ -7,6 +7,7 @@ from app.models.company import Company, FundingStage
 from app.models.company_problem import CompanyProblem
 from app.models.domain import Domain, ProblemDomain
 from app.models.problem import ImpactLevel, Problem
+from app.repositories.detail import domains_for_problems
 from app.schemas.problem import CompanyProblemLink, ProblemCreate, ProblemUpdate
 
 # Control-character highlight markers: they never occur in real text, and the
@@ -70,27 +71,14 @@ def count_problem_matches(db: Session, query: str) -> int:
     return db.scalar(select(func.count(Problem.id)).where(Problem.search_vector.op("@@")(ts_query))) or 0
 
 
-def search_problems(
-    db: Session,
-    query: str,
-    skip: int = 0,
-    limit: int = 20,
-    domain_slug: str | None = None,
-    category: str | None = None,
-    impact_level: ImpactLevel | None = None,
-    funding_stage: FundingStage | None = None,
-) -> dict:
-    """Ranked full-text search over problems (title/description/category).
-
-    `query` uses web-search syntax: "quoted phrases", OR, and -exclusion.
-    Facet counts are computed over the text-matched set *before* filters,
-    so the UI can show how many results each filter value would yield.
-    """
-    ts_query = func.websearch_to_tsquery("english", query)
-    text_match = Problem.search_vector.op("@@")(ts_query)
-
-    # One condition list feeds both the count and the page, so they can never disagree.
-    conditions = [text_match]
+def _filter_conditions(
+    domain_slug: str | None,
+    category: str | None,
+    impact_level: ImpactLevel | None,
+    funding_stage: FundingStage | None,
+) -> list:
+    """The user-selected filters as SQL conditions on Problem (shared by keyword and hybrid search)."""
+    conditions = []
     if domain_slug:
         conditions.append(
             Problem.id.in_(
@@ -111,6 +99,73 @@ def search_problems(
                 .where(Company.funding_stage == funding_stage)
             )
         )
+    return conditions
+
+
+def _facets(db: Session, scope) -> dict:
+    """Facet counts over the problems selected by `scope` (a SQL condition on Problem),
+    always computed *before* the user's filters so every filter choice keeps its count."""
+    domain_facets = db.execute(
+        select(Domain.slug, Domain.name, func.count(distinct(Problem.id)))
+        .join(ProblemDomain, ProblemDomain.domain_id == Domain.id)
+        .join(Problem, Problem.id == ProblemDomain.problem_id)
+        .where(scope)
+        .group_by(Domain.slug, Domain.name)
+        .order_by(func.count(distinct(Problem.id)).desc(), Domain.name)
+    ).all()
+    impact_facets = db.execute(
+        select(Problem.impact_level, func.count(Problem.id))
+        .where(scope)
+        .group_by(Problem.impact_level)
+        .order_by(func.count(Problem.id).desc())
+    ).all()
+    category_facets = db.execute(
+        select(Problem.category, func.count(Problem.id))
+        .where(scope, Problem.category.isnot(None))
+        .group_by(Problem.category)
+        .order_by(func.count(Problem.id).desc(), Problem.category)
+    ).all()
+    # Counts distinct problems, so a problem with several companies at the same
+    # stage is counted once per stage, never once per company.
+    funding_facets = db.execute(
+        select(Company.funding_stage, func.count(distinct(Problem.id)))
+        .join(CompanyProblem, CompanyProblem.company_id == Company.id)
+        .join(Problem, Problem.id == CompanyProblem.problem_id)
+        .where(scope)
+        .group_by(Company.funding_stage)
+        .order_by(func.count(distinct(Problem.id)).desc(), Company.funding_stage)
+    ).all()
+    return {
+        "domains": [{"value": slug, "label": name, "count": count} for slug, name, count in domain_facets],
+        "impact_levels": [{"value": level.value, "label": level.value, "count": count} for level, count in impact_facets],
+        "categories": [{"value": cat, "label": cat, "count": count} for cat, count in category_facets],
+        "funding_stages": [
+            {"value": stage.value, "label": stage.value, "count": count} for stage, count in funding_facets
+        ],
+    }
+
+
+def search_problems(
+    db: Session,
+    query: str,
+    skip: int = 0,
+    limit: int = 20,
+    domain_slug: str | None = None,
+    category: str | None = None,
+    impact_level: ImpactLevel | None = None,
+    funding_stage: FundingStage | None = None,
+) -> dict:
+    """Ranked full-text search over problems (title/description/category).
+
+    `query` uses web-search syntax: "quoted phrases", OR, and -exclusion.
+    Facet counts are computed over the text-matched set *before* filters,
+    so the UI can show how many results each filter value would yield.
+    """
+    ts_query = func.websearch_to_tsquery("english", query)
+    text_match = Problem.search_vector.op("@@")(ts_query)
+
+    # One condition list feeds both the count and the page, so they can never disagree.
+    conditions = [text_match, *_filter_conditions(domain_slug, category, impact_level, funding_stage)]
 
     total = db.scalar(select(func.count(Problem.id)).where(*conditions)) or 0
 
@@ -127,48 +182,7 @@ def search_problems(
         .limit(limit)
     ).all()
 
-    problem_ids = [row[0].id for row in rows]
-    domains_by_problem: dict[UUID, list[dict]] = {pid: [] for pid in problem_ids}
-    if problem_ids:
-        for problem_id, slug, name in db.execute(
-            select(ProblemDomain.problem_id, Domain.slug, Domain.name)
-            .join(Domain, Domain.id == ProblemDomain.domain_id)
-            .where(ProblemDomain.problem_id.in_(problem_ids))
-            .order_by(Domain.name)
-        ).all():
-            domains_by_problem[problem_id].append({"slug": slug, "name": name})
-
-    domain_facets = db.execute(
-        select(Domain.slug, Domain.name, func.count(distinct(Problem.id)))
-        .join(ProblemDomain, ProblemDomain.domain_id == Domain.id)
-        .join(Problem, Problem.id == ProblemDomain.problem_id)
-        .where(text_match)
-        .group_by(Domain.slug, Domain.name)
-        .order_by(func.count(distinct(Problem.id)).desc(), Domain.name)
-    ).all()
-    impact_facets = db.execute(
-        select(Problem.impact_level, func.count(Problem.id))
-        .where(text_match)
-        .group_by(Problem.impact_level)
-        .order_by(func.count(Problem.id).desc())
-    ).all()
-
-    category_facets = db.execute(
-        select(Problem.category, func.count(Problem.id))
-        .where(text_match, Problem.category.isnot(None))
-        .group_by(Problem.category)
-        .order_by(func.count(Problem.id).desc(), Problem.category)
-    ).all()
-    # Counts distinct problems, so a problem with several companies at the same
-    # stage is counted once per stage, never once per company.
-    funding_facets = db.execute(
-        select(Company.funding_stage, func.count(distinct(Problem.id)))
-        .join(CompanyProblem, CompanyProblem.company_id == Company.id)
-        .join(Problem, Problem.id == CompanyProblem.problem_id)
-        .where(text_match)
-        .group_by(Company.funding_stage)
-        .order_by(func.count(distinct(Problem.id)).desc(), Company.funding_stage)
-    ).all()
+    domains_by_problem = domains_for_problems(db, [row[0].id for row in rows])
 
     return {
         "items": [
@@ -182,16 +196,63 @@ def search_problems(
             for row in rows
         ],
         "total": total,
-        "facets": {
-            "domains": [{"value": slug, "label": name, "count": count} for slug, name, count in domain_facets],
-            "impact_levels": [
-                {"value": level.value, "label": level.value, "count": count} for level, count in impact_facets
-            ],
-            "categories": [{"value": cat, "label": cat, "count": count} for cat, count in category_facets],
-            "funding_stages": [
-                {"value": stage.value, "label": stage.value, "count": count} for stage, count in funding_facets
-            ],
-        },
+        "facets": _facets(db, text_match),
+    }
+
+
+# ---- building blocks for hybrid (keyword + semantic) search -------------------------------------
+
+
+def keyword_candidate_ids(db: Session, query: str, limit: int) -> list[UUID]:
+    """Ids of the best keyword matches, best first (same ranking as search_problems)."""
+    ts_query = func.websearch_to_tsquery("english", query)
+    rank_expr = func.ts_rank(Problem.search_vector, ts_query)
+    rows = db.execute(
+        select(Problem.id)
+        .where(Problem.search_vector.op("@@")(ts_query))
+        .order_by(rank_expr.desc(), Problem.id.desc())
+        .limit(limit)
+    ).all()
+    return [row[0] for row in rows]
+
+
+def filter_problem_ids(
+    db: Session,
+    ids: list[UUID],
+    domain_slug: str | None = None,
+    category: str | None = None,
+    impact_level: ImpactLevel | None = None,
+    funding_stage: FundingStage | None = None,
+) -> set[UUID]:
+    """Which of `ids` satisfy the user's filters."""
+    if not ids:
+        return set()
+    conditions = _filter_conditions(domain_slug, category, impact_level, funding_stage)
+    rows = db.execute(select(Problem.id).where(Problem.id.in_(ids), *conditions)).all()
+    return {row[0] for row in rows}
+
+
+def facets_for_ids(db: Session, ids: list[UUID]) -> dict:
+    return _facets(db, Problem.id.in_(ids))
+
+
+def hydrate_problems(db: Session, ids: list[UUID], query: str) -> dict[UUID, dict]:
+    """Problem rows plus highlighted snippets and domains for a page of ids (highlights come
+    from the keyword query; a semantic-only hit simply has nothing highlighted)."""
+    if not ids:
+        return {}
+    ts_query = func.websearch_to_tsquery("english", query)
+    rows = db.execute(
+        select(
+            Problem,
+            func.ts_headline("english", func.coalesce(Problem.description, ""), ts_query, _HEADLINE_OPTIONS),
+            func.ts_headline("english", Problem.title, ts_query, _HEADLINE_OPTIONS),
+        ).where(Problem.id.in_(ids))
+    ).all()
+    domains = domains_for_problems(db, ids)
+    return {
+        row[0].id: {"problem": row[0], "snippet": row[1], "title_snippet": row[2], "domains": domains[row[0].id]}
+        for row in rows
     }
 
 
@@ -331,3 +392,9 @@ def get_problems_for_company(
         output.append(problem_dict)
 
     return output
+
+
+def get_problems_by_ids(db: Session, ids: list[UUID]) -> dict[UUID, Problem]:
+    if not ids:
+        return {}
+    return {p.id: p for p in db.scalars(select(Problem).where(Problem.id.in_(ids))).all()}

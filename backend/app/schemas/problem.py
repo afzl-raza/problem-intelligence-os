@@ -1,5 +1,7 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.company_problem import RelationshipType
@@ -51,6 +53,11 @@ class ProblemMatch(ProblemResponse):
         description="Title with matched terms wrapped in \\u0002 (start) and \\u0003 (end) markers. Plain text, never HTML."
     )
     domains: list[DomainRef]
+    match_type: Literal["keyword", "semantic", "both"] = "keyword"
+    similarity: float | None = Field(
+        default=None,
+        description="Cosine similarity to the query for meaning-based matches (a relevance signal, not proof of equivalence); null for keyword-only matches.",
+    )
 
 
 class FacetCount(BaseModel):
@@ -72,6 +79,10 @@ class ProblemSearchResponse(BaseModel):
     skip: int
     limit: int
     facets: SearchFacets
+    mode_used: Literal["keyword", "hybrid"] = "keyword"
+    semantic_note: str | None = Field(
+        default=None, description="Why a hybrid request fell back to keyword results, when it did."
+    )
 
 
 class CompanyProblemLink(BaseModel):

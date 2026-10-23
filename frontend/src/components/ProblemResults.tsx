@@ -56,6 +56,9 @@ export function ProblemResults({ state, items, filtersActive, correction, onSear
             </h3>
             <span className="badge">{problem.impact_level}</span>
           </div>
+          {problem.match_type === 'semantic' && (
+            <p className="match-note">Matched by meaning, not by an exact keyword match</p>
+          )}
           {problem.snippet && (
             <p className="card__body">
               <Highlighted text={problem.snippet} />
@@ -68,7 +71,13 @@ export function ProblemResults({ state, items, filtersActive, correction, onSear
               </Link>
             ))}
             {problem.category && <span>{problem.category}</span>}
-            <span>relevance {problem.relevance_score.toFixed(2)}</span>
+            {problem.similarity !== null ? (
+              <span title="Cosine similarity of meaning: a relevance signal, not proof the problems are the same">
+                meaning match {problem.similarity.toFixed(2)}
+              </span>
+            ) : (
+              state.data.mode_used === 'keyword' && <span>relevance {problem.relevance_score.toFixed(2)}</span>
+            )}
           </div>
         </li>
       ))}

@@ -15,6 +15,8 @@ Dataset format:
       "entries": [ { ..., "domains": [...] }, ... ] # per-entry override optional
     }
 
+Add --embed to also embed any new or changed problems for semantic search afterwards.
+
 Usage (from the backend directory):
     .venv\\Scripts\\python.exe scripts\\ingest_research_data.py scripts\\research_data\\parking_management_saas.json
 """
@@ -23,6 +25,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.db.session import SessionLocal  # noqa: E402
 from app.services.research_ingestion import ingest_dataset  # noqa: E402
@@ -33,7 +36,9 @@ def _created(flag: bool) -> str:
 
 
 def main() -> None:
-    paths = [Path(arg) for arg in sys.argv[1:]]
+    args = sys.argv[1:]
+    embed = "--embed" in args
+    paths = [Path(arg) for arg in args if not arg.startswith("--")]
     if not paths:
         print("Usage: ingest_research_data.py <dataset.json> [more.json ...]")
         sys.exit(1)
@@ -68,6 +73,11 @@ def main() -> None:
             )
     finally:
         db.close()
+
+    if embed:
+        from embed_problems import run as embed_problems
+
+        embed_problems()
 
 
 if __name__ == "__main__":

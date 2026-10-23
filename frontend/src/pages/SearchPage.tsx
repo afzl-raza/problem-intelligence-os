@@ -6,6 +6,7 @@ import type {
   ImpactLevel,
   ProblemMatch,
   ProblemSearchFilters,
+  SearchMode,
   Suggestion,
 } from '../api/types'
 import { hasActiveFilters } from '../api/types'
@@ -19,10 +20,11 @@ const PAGE_SIZE = 20
 
 type Tab = 'problems' | 'companies'
 
-function buildParams(q: string, tab: Tab, filters: ProblemSearchFilters): URLSearchParams {
+function buildParams(q: string, tab: Tab, filters: ProblemSearchFilters, mode: SearchMode): URLSearchParams {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   if (tab === 'companies') params.set('tab', tab)
+  if (mode === 'keyword') params.set('mode', mode) // hybrid is the default, so only the opt-out is written
   for (const [key, value] of Object.entries(filters)) {
     if (value) params.set(key, value)
   }
@@ -43,6 +45,7 @@ export function SearchPage() {
   // The URL is the single source of truth for what is being searched.
   const q = params.get('q')?.trim() ?? ''
   const tab: Tab = params.get('tab') === 'companies' ? 'companies' : 'problems'
+  const mode: SearchMode = params.get('mode') === 'keyword' ? 'keyword' : 'hybrid'
   const filters: ProblemSearchFilters = {
     domain: params.get('domain') ?? undefined,
     category: params.get('category') ?? undefined,
@@ -60,8 +63,8 @@ export function SearchPage() {
     setDraft(q)
   }
 
-  const problemKey = q ? `problems:${q}:${filtersKey}` : null
-  const problems = useFetch(problemKey, (signal) => searchProblems(q, filters, 0, PAGE_SIZE, signal))
+  const problemKey = q ? `problems:${q}:${mode}:${filtersKey}` : null
+  const problems = useFetch(problemKey, (signal) => searchProblems(q, { filters, mode, limit: PAGE_SIZE, signal }))
   const companies = useFetch(q ? `companies:${q}` : null, (signal) => searchCompanies(q, 0, PAGE_SIZE, signal))
 
   const spellKey = problems.status === 'success' && problems.data.total === 0 && !filtersActive ? `spell:${q}` : null
@@ -78,7 +81,7 @@ export function SearchPage() {
     const already = loadedMore?.items ?? []
     setMore({ key, items: already, loading: true, error: null })
     try {
-      const page = await searchProblems(q, filters, problems.data.items.length + already.length, PAGE_SIZE)
+      const page = await searchProblems(q, { filters, mode, skip: problems.data.items.length + already.length, limit: PAGE_SIZE })
       // Ignore the response if the user moved on to a different search meanwhile.
       setMore((current) =>
         current.key === key ? { key, items: [...already, ...page.items], loading: false, error: null } : current,
@@ -91,7 +94,7 @@ export function SearchPage() {
   }
 
   function search(query: string) {
-    setParams(buildParams(query.trim(), tab, {}))
+    setParams(buildParams(query.trim(), tab, {}, mode))
   }
 
   function pick(suggestion: Suggestion) {
@@ -102,6 +105,8 @@ export function SearchPage() {
   const problemCount = problems.status === 'success' ? problems.data.total : null
   const companyCount = companies.status === 'success' ? companies.data.total : null
   const canLoadMore = problems.status === 'success' && items.length < problems.data.total
+  const semanticNote = problems.status === 'success' ? problems.data.semantic_note : null
+  const showsMeaningMatches = items.some((item) => item.match_type !== 'keyword')
 
   return (
     <div className="page">
@@ -128,7 +133,7 @@ export function SearchPage() {
               role="tab"
               aria-selected={tab === 'problems'}
               className={`tab ${tab === 'problems' ? 'tab--active' : ''}`}
-              onClick={() => setParams(buildParams(q, 'problems', filters))}
+              onClick={() => setParams(buildParams(q, 'problems', filters, mode))}
             >
               Problems{problemCount !== null && ` (${problemCount})`}
             </button>
@@ -137,7 +142,7 @@ export function SearchPage() {
               role="tab"
               aria-selected={tab === 'companies'}
               className={`tab ${tab === 'companies' ? 'tab--active' : ''}`}
-              onClick={() => setParams(buildParams(q, 'companies', filters))}
+              onClick={() => setParams(buildParams(q, 'companies', filters, mode))}
             >
               Companies{companyCount !== null && ` (${companyCount})`}
             </button>
@@ -145,13 +150,22 @@ export function SearchPage() {
 
           {tab === 'problems' ? (
             <>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={mode === 'hybrid'}
+                  onChange={(event) => setParams(buildParams(q, tab, filters, event.target.checked ? 'hybrid' : 'keyword'))}
+                />
+                Match by meaning
+              </label>
               {problems.status === 'success' && (
                 <FilterBar
                   facets={problems.data.facets}
                   filters={filters}
-                  onChange={(next) => setParams(buildParams(q, tab, next))}
+                  onChange={(next) => setParams(buildParams(q, tab, next, mode))}
                 />
               )}
+              {semanticNote && <p className="notice-inline">{semanticNote}</p>}
               <ProblemResults
                 state={problems}
                 items={items}
@@ -159,6 +173,11 @@ export function SearchPage() {
                 correction={correction}
                 onSearchCorrection={search}
               />
+              {showsMeaningMatches && (
+                <p className="hint">
+                  Results matched by meaning are a relevance signal, not proof that a problem is the same as your search.
+                </p>
+              )}
               {canLoadMore && (
                 <div className="load-more">
                   <button type="button" onClick={loadMore} disabled={loadedMore?.loading}>

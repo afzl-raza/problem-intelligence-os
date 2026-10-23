@@ -454,3 +454,56 @@ Research ran as three parallel passes (WebSearch → WebFetch against each compa
 
 ### Next:
 Sprint 3.4 (semantic and hybrid search) per the spec's checklist, with its own plan-mode pass.
+
+---
+
+## Sprint 3.4 — Semantic and Hybrid Search (2026-10-23)
+
+### Why:
+Roadmap spec §6: find problems by meaning rather than exact wording, keep exact keyword matches, no paid embedding API, testable offline. Planned in plan mode first; decisions confirmed with the user: pgvector via a custom Dockerfile, and `BAAI/bge-small-en-v1.5` through `fastembed`.
+
+### Infrastructure finding that changed the plan:
+The obvious move (switch the compose file to the `pgvector/pgvector:pg16` image, already pulled locally) was **unsafe**. That image is Debian 12 / glibc 2.36; the existing volume's databases were created on Debian 13 / glibc 2.41 (`datcollversion = 2.41`), and reusing a volume across glibc versions can silently leave text indexes inconsistent. `postgresql-16-pgvector` 0.8.7 turned out to be installable on the *current* base, so `docker/postgres/Dockerfile` is `postgres:16` plus one `apt` package: same OS, same volume, no data movement. A `pg_dump` backup was taken first; after recreating the container the volume name, row counts (23 companies / 20 problems / 20 evidence / 20 problem-domain links), Alembic head, glibc and collation versions were all unchanged, and `vector` 0.8.7 was available.
+
+### Built:
+- **Embedding boundary** (`app/services/embeddings.py`): an `Embedder` protocol with `FastEmbedEmbedder` (lazy local ONNX model), and deterministic `HashingEmbedder` / `FixedEmbedder` for tests; the autouse test fixture installs the hashing embedder, so the suite never downloads or runs a model. One opt-in `@pytest.mark.model` test runs the real model (`pytest -m model`; passes).
+- **Storage**: separate `problem_embeddings` table (`vector(384)`, HNSW cosine index; `model_name`, `model_dimensions`, `library_version`, `source_hash`, `embedded_at` per row). Migration `cf8128f756de` verified up / down / up.
+- **Indexing is a command** (`scripts/embed_problems.py`, or `ingest_research_data.py --embed`): embeds only missing or stale vectors; stale = missing, text hash changed, or model changed. Create / update / ingestion never embed (tested). Re-running embeds nothing.
+- **Hybrid search**: `GET /problems/search?mode=hybrid` merges keyword candidates (existing ranking) and vector candidates (cosine >= `SEMANTIC_MIN_SIMILARITY`) by Reciprocal Rank Fusion; all keyword hits are kept; filters and facets work as in keyword mode (facets over the unfiltered candidate set). Items carry `match_type` and `similarity`; responses carry `mode_used` and `semantic_note`. Only the *query* is embedded at request time, and cached. Default mode stays `keyword`.
+- **Degradation**: provider off, nothing indexed, or embedder failure (logged with traceback) each return keyword results plus an explanatory note, never an error.
+- **`GET /problems/{id}/related`** and **`GET /search/semantic/status`**; the keyword search code was refactored into shared filter / facet / domain helpers with the keyword path's behavior unchanged (its tests pass untouched).
+- **UI**: "Match by meaning" toggle (URL `mode=keyword` records only the opt-out), "Matched by meaning, not by an exact keyword match" labels with the similarity value, a "relevance signal, not proof" note, fallback notice, and a "Related by meaning" section on problem pages.
+
+### Evaluation (real model, real database, `scripts/eval_semantic.py`):
+17 judged queries worded unlike the problem text, plus 2 off-topic negatives, over the 20 problems.
+
+| Mode | hit@1 | recall@3 | recall@5 | MRR |
+|---|---|---|---|---|
+| keyword | 0.06 | 0.06 | 0.06 | 0.06 |
+| semantic (no cutoff) | 0.88 | 0.97 | 1.00 | 0.93 |
+| hybrid (cutoff 0.60) | 0.88 | 0.97 | 0.97 | 0.93 |
+
+Hybrid lost 0 of 17 queries' keyword hits, returned nothing for both negatives, and returned a median of 2 results per query (max 4 of 20). Relevant query-problem similarities ran 0.596-0.787 (median 0.663); other pairs median 0.50, p95 0.604, max 0.708; the two negatives peaked at 0.472 / 0.488. At a 0.60 cutoff: precision 0.55, recall 0.96; at 0.65: precision 0.74, recall 0.61. **`SEMANTIC_MIN_SIMILARITY = 0.60`.** Problem-to-problem similarities run higher (same-domain pairs 0.70-0.85), so **`RELATED_MIN_SIMILARITY = 0.70`**; in the 0.70+ set one pair is questionable (an issue-tracker problem vs. clinic scheduling, 0.722), the rest read as sensible.
+
+### Learned:
+- My first eval "control" query contained a word absent from the problem text ("campus"), so keyword search scored 0.00 even on the control. `websearch_to_tsquery` ANDs terms, so a natural-language query with one stray word returns *nothing* by keyword; that is the practical gap semantic search closes. The fixed control ("parking permits for universities") lets keyword find its answer, hence hit@1 0.06 rather than 0.00.
+- bge-small's similarity scale is compressed: unrelated short texts still score 0.35-0.70, so a threshold must come from data. Query-to-problem and problem-to-problem similarities live on different scales and need separate thresholds.
+- A deliberately wrong threshold (-1) makes 9 of the 21 hybrid / related tests fail, which is how I confirmed those tests can actually fail.
+- Model download took ~7.5 minutes on this network for ~65MB (the quantized ONNX model), then 0.7s to load in the API process on the first hybrid request and ~70ms warm.
+- Shell heredocs in this environment collapse `\` and choke on large multi-heredoc commands; Windows paths and big files are written with the file tools instead.
+
+### Known limitations:
+- **The eval set is small and was drafted by me with knowledge of the 20 problems**, and the thresholds were tuned on that same set, so the numbers are optimistic. The judgments still need your review (spec: "manually reviewed"); `eval/semantic_queries.json` says so.
+- Hybrid considers at most 50 keyword + 50 semantic candidates, bounding its pagination (irrelevant at 20 problems).
+- Only problems are embedded; company search is keyword-only. Related-problem quality at 0.70 includes occasional cross-domain pairs that are loosely related.
+- Thresholds are specific to `bge-small-en-v1.5`; changing the model means re-running the evaluation and re-setting both.
+- The API process loads the model in-process on first use. Embeddings are not refreshed automatically; `GET /search/semantic/status` shows how many are stale.
+- No automated frontend tests (manual browser verification only).
+
+### Tests:
+- Backend **199/199 PASSED** (162 + 37 new: embedder boundary, indexing and staleness rules, hybrid search, related problems, status) plus 1 opt-in real-model test passing.
+- Frontend: `tsc -b`, `oxlint`, `npm run build` clean.
+- Browser (real model): "drivers wait too long to get out of the garage" finds *Manual checkout friction* and *Finding and paying for parking* by meaning (keyword mode returns nothing); the toggle round-trips through the URL; related problems appear on a problem page with the disclaimer; with `EMBEDDING_PROVIDER=none` the page shows the fallback note, keyword results, and no related section.
+
+### Next:
+Sprint 3.5 (opportunity and whitespace signals) per the spec, with its own plan-mode pass. It can build on `related` for "similar problems with inconsistent company coverage".

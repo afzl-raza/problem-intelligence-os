@@ -1,0 +1,97 @@
+{
+  "description": "Manually judged queries for evaluating keyword vs semantic vs hybrid problem search against the 20 researched problems. Queries are worded the way a founder would say it, deliberately NOT reusing the problem titles' vocabulary (except the 'control' rows, which confirm exact keyword matches still work). 'relevant' lists problem titles a reviewer would accept as a good answer. DRAFTED BY THE ASSISTANT AND AWAITING HUMAN REVIEW: these judgments set the similarity thresholds, so please correct any you disagree with.",
+  "judged_on": "2026-10-23",
+  "queries": [
+    {
+      "query": "drivers wait too long to get out of the garage",
+      "relevant": ["Manual checkout friction at parking facilities"]
+    },
+    {
+      "query": "no idea where to leave my car",
+      "relevant": ["Finding and paying for parking as a driver"]
+    },
+    {
+      "query": "unpaid tickets and illegal stopping in the city",
+      "relevant": [
+        "Curb and parking enforcement for cities",
+        "Parking permit management and enforcement for universities and municipalities"
+      ]
+    },
+    {
+      "query": "parking permits for universities",
+      "relevant": ["Parking permit management and enforcement for universities and municipalities"],
+      "control": true
+    },
+    {
+      "query": "sending money to other countries is slow and costly",
+      "relevant": ["Cross-border payment settlement complexity"]
+    },
+    {
+      "query": "apps need to read customers' bank data",
+      "relevant": ["Fragmented bank account connectivity for fintech apps"]
+    },
+    {
+      "query": "engineers waste time updating tickets",
+      "relevant": ["Issue tracking and software workflow overhead"]
+    },
+    {
+      "query": "company wiki scattered across many tools",
+      "relevant": ["Consolidating team knowledge into a single system of record"]
+    },
+    {
+      "query": "kitchen cannot take orders when the wifi goes down",
+      "relevant": ["Restaurant POS downtime during internet outages"]
+    },
+    {
+      "query": "customers order through our own app and delivery platforms separately",
+      "relevant": [
+        "Fragmented digital ordering and guest journey for restaurant brands",
+        "Siloed front-of-house, back-of-house, and guest engagement tools"
+      ]
+    },
+    {
+      "query": "one cash register for a bakery, a food truck and a bar",
+      "relevant": ["Running different restaurant formats on one simple point-of-sale system"]
+    },
+    {
+      "query": "therapist keeping client notes and invoices in one place",
+      "relevant": [
+        "Running a solo or small health practice across notes, billing, and telehealth",
+        "Fragmented scheduling, charting, and billing in appointment-based clinics"
+      ]
+    },
+    {
+      "query": "doctor's office billing does not talk to appointments",
+      "relevant": [
+        "Disconnected clinical, billing, and scheduling systems in independent practices",
+        "Fragmented scheduling, charting, and billing in appointment-based clinics"
+      ]
+    },
+    {
+      "query": "specialist clinics need templates for their own field",
+      "relevant": ["Specialty practices needing workflows tailored to their specialty"]
+    },
+    {
+      "query": "truck drivers must file fuel tax and hours of service logs",
+      "relevant": ["Manual compliance and fuel-tax reporting for commercial fleets"]
+    },
+    {
+      "query": "see where all our trucks are right now",
+      "relevant": [
+        "Coordinating dispatch and driver safety from live vehicle location",
+        "Fragmented visibility across fleet, equipment, and field operations"
+      ]
+    },
+    {
+      "query": "know the health of every vehicle to prevent accidents",
+      "relevant": [
+        "Capturing vehicle data to manage safety, maintenance, and EV adoption across a fleet",
+        "Fragmented visibility across fleet, equipment, and field operations"
+      ]
+    }
+  ],
+  "negative_queries": [
+    "growing tomatoes in a greenhouse",
+    "history of the Roman empire"
+  ]
+}

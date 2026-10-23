@@ -29,9 +29,9 @@ PIOS is engineered with a strict 5-layer separation of concerns:
 ## Quick Start
 
 ### 1. Database Setup (Docker)
-Ensure Docker is running, then start PostgreSQL:
+Ensure Docker is running, then build and start PostgreSQL 16 with the pgvector extension (`docker/postgres/Dockerfile`; the first run builds the image):
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
 ### 2. Virtual Environment & Migrations
@@ -61,6 +61,13 @@ cd backend
 .venv\Scripts\python.exe scripts\ingest_research_data.py scripts\research_data\fleet_management_logistics_saas.json scripts\research_data\restaurant_management_pos_saas.json scripts\research_data\clinic_practice_management_saas.json
 ```
 `make seed` ingests all five datasets.
+
+### 5b. Index Problems for Meaning-Based Search (optional)
+Hybrid search finds problems by meaning as well as keywords ("drivers wait too long to get out of the garage" finds *Manual checkout friction*). It uses a local open-source embedding model (`BAAI/bge-small-en-v1.5`, no API key, no cost) that downloads once (~65MB) into `backend/.model_cache`. Embedding is an explicit command, never part of an API request; re-run it after adding or editing problems (it only embeds what changed):
+```bash
+.venv\Scripts\python.exe scripts\embed_problems.py
+```
+`make embed` does the same. Without it, or with `EMBEDDING_PROVIDER=none`, search silently falls back to keyword results with a note in the UI. Quality was measured on a manually judged query set: `.venv\Scripts\python.exe scripts\eval_semantic.py`.
 
 ### 6. Run the Demo Frontend
 ```bash

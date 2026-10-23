@@ -9,6 +9,7 @@
 - **Driver**: Psycopg 3.3.4 (`postgresql+psycopg://`)
 - **Extensions**: `pg_trgm` (trigram similarity, enabled by migration `665a1bf5fb13`; powers company duplicate detection)
 - **Full-Text Search**: native Postgres `tsvector`/`ts_rank`/`websearch_to_tsquery`/`ts_headline` (no extension required); problems since migration `2aba437f9b2a`, companies since `ee5da04ca95e`
+- **Vector search**: `pgvector` 0.8 (`vector` extension, migration `cf8128f756de`). The database image is built from `docker/postgres/Dockerfile` (`postgres:16` + `postgresql-16-pgvector`) rather than switching to `pgvector/pgvector`, whose older Debian base (glibc 2.36 vs the volume's 2.41) would have put text-index collation at risk. Tests create the extension in `problem_intelligence_test` themselves.
 - **Typo tolerance**: `pg_trgm` `word_similarity`/`similarity` power `/search/suggest` and `/search/spellcheck`
 
 ---
@@ -27,6 +28,7 @@ Managed strictly via Alembic (`backend/alembic`).
 | `665a1bf5fb13` | `add_company_normalized_name_and_trgm_index` | Sprint 2.4 | Applied |
 | `2aba437f9b2a` | `add_problem_search_vector_and_gin_index` | Sprint 2.5 | Applied |
 | `ee5da04ca95e` | `add_domains_and_company_search_vector` | Sprint 3.2 | Applied |
+| `cf8128f756de` | `add_problem_embeddings_and_pgvector` | Sprint 3.4 | Applied |
 
 ---
 
@@ -140,3 +142,19 @@ Managed strictly via Alembic (`backend/alembic`).
 | `domain_id` | `UUID` | PK, FK -> `domains.id` ON DELETE CASCADE | Composite PK, `ix_problem_domains_domain_id` | Domain the problem belongs to |
 
 *Note*: Many-to-many — a problem can span domains. Companies belong to domains transitively through their linked problems (no direct company↔domain table, so there is a single source of truth).
+
+---
+
+### 9. `problem_embeddings` Table
+
+| Column Name | Data Type | Constraints | Index | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `problem_id` | `UUID` | PK, FK -> `problems.id` ON DELETE CASCADE | Primary key | The problem this vector represents (one row per problem) |
+| `embedding` | `vector(384)` | NOT NULL | `ix_problem_embeddings_embedding_hnsw` (HNSW, `vector_cosine_ops`) | Embedding of the problem's title, description, and category |
+| `model_name` | `VARCHAR(120)` | NOT NULL | No | Model that produced the vector, e.g. `BAAI/bge-small-en-v1.5` |
+| `model_dimensions` | `INTEGER` | NOT NULL | No | Vector size at the time of embedding |
+| `library_version` | `VARCHAR(50)` | NOT NULL | No | Embedding library version (`fastembed`) |
+| `source_hash` | `VARCHAR(64)` | NOT NULL | No | Content hash of the embedded text; a mismatch with the current text means the vector is stale |
+| `embedded_at` | `TIMESTAMPTZ` | NOT NULL | No | When the vector was computed |
+
+*Notes*: kept apart from `problems` so ordinary problem queries never load vectors and a model change is a re-index, not a `problems` schema change. A vector is **stale** when it is missing, its `source_hash` differs from the current text, or its `model_name` / `model_dimensions` differ from the configured embedder. Vectors are written only by `scripts/embed_problems.py`, never by API requests.

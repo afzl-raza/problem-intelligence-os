@@ -1,3 +1,10 @@
+from sqlalchemy import select
+
+from app.models.problem import Problem
+from app.services.embedding_index import embedding_source_text, reindex
+from app.services.embeddings import FixedEmbedder, set_embedder_override
+
+
 def make_entry(company_name="Acme Parking", problem_title="Gate queue friction", **overrides):
     """A research-data entry in the scripts/research_data/*.json format."""
     entry = {
@@ -13,3 +20,17 @@ def make_entry(company_name="Acme Parking", problem_title="Gate queue friction",
     }
     entry.update(overrides)
     return entry
+
+
+def install_fixed_embeddings(db_session, problem_vectors: dict[str, list[float]], query_vectors: dict[str, list[float]]):
+    """Embed the problems named in `problem_vectors` (title -> vector) with hand-set vectors, and make
+    `query_vectors` (query text -> vector) the embedder's known queries. Returns the installed embedder.
+
+    Cosine similarities are then exactly what the test author set, so ranking and threshold
+    behaviour can be asserted without a real model."""
+    problems = db_session.scalars(select(Problem)).all()
+    texts = {embedding_source_text(p): problem_vectors[p.title] for p in problems if p.title in problem_vectors}
+    embedder = FixedEmbedder({**texts, **query_vectors})
+    set_embedder_override(embedder)
+    reindex(db_session, embedder)
+    return embedder

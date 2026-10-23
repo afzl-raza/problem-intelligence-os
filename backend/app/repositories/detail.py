@@ -12,7 +12,7 @@ from app.models.problem import Problem
 from app.models.source import Source
 
 
-def _domains_for_problems(db: Session, problem_ids: list[UUID]) -> dict[UUID, list[dict]]:
+def domains_for_problems(db: Session, problem_ids: list[UUID]) -> dict[UUID, list[dict]]:
     domains: dict[UUID, list[dict]] = defaultdict(list)
     if not problem_ids:
         return domains
@@ -55,7 +55,7 @@ def get_problem_detail(db: Session, problem_id: UUID) -> dict | None:
 
     return {
         "problem": problem,
-        "domains": _domains_for_problems(db, [problem_id])[problem_id],
+        "domains": domains_for_problems(db, [problem_id])[problem_id],
         "companies": [
             {"company": company, "link": link, "evidence": evidence_by_company[company.id]}
             for company, link in links
@@ -79,7 +79,7 @@ def get_company_detail(db: Session, company_id: UUID) -> dict | None:
     for evidence, source in _evidence_with_sources(db, EvidenceRecord.company_id == company_id):
         evidence_by_problem[evidence.problem_id].append((evidence, source))
 
-    domains = _domains_for_problems(db, [problem.id for problem, _ in links])
+    domains = domains_for_problems(db, [problem.id for problem, _ in links])
     return {
         "company": company,
         "problems": [

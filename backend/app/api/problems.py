@@ -1,3 +1,4 @@
+from typing import Literal
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -5,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import NO_NUL_PATTERN, SearchQuery
 from app.db.session import get_db
 from app.schemas.detail import ProblemDetail
+from app.schemas.semantic import RelatedProblemsResponse
+from app.services.hybrid_search import get_related_problems, search_problems_hybrid
 from app.services.detail import get_problem_detail
 from app.models.company import FundingStage
 from app.models.problem import ImpactLevel
@@ -92,9 +95,14 @@ def search_problems_endpoint(
     category: str | None = Query(None, min_length=1, pattern=NO_NUL_PATTERN, description="Filter by exact category (case-insensitive)"),
     impact_level: ImpactLevel | None = Query(None, description="Filter by impact level"),
     funding_stage: FundingStage | None = Query(None, description="Only problems with at least one linked company at this funding stage"),
+    mode: Literal["keyword", "hybrid"] = Query(
+        "keyword",
+        description="keyword: full-text only. hybrid: full-text plus meaning-based matches (falls back to keyword with a note if unavailable).",
+    ),
     db: Session = Depends(get_db),
 ):
-    return search_problems(
+    search = search_problems_hybrid if mode == "hybrid" else search_problems
+    return search(
         db=db,
         query=q,
         skip=skip,
@@ -272,3 +280,28 @@ def get_problem_detail_endpoint(
             detail="Problem not found",
         )
     return detail
+
+
+@router.get(
+    "/problems/{problem_id}/related",
+    response_model=RelatedProblemsResponse,
+    summary="Problems related by meaning",
+    description=(
+        "Problems whose text is closest in meaning to this one (cosine similarity at or above "
+        "RELATED_MIN_SIMILARITY), excluding itself. Similarity is a relevance signal, not proof "
+        "that two problems are the same. Returns an empty list with semantic_available=false "
+        "when meaning-based search is disabled or this problem is not indexed yet."
+    ),
+)
+def get_related_problems_endpoint(
+    problem_id: UUID,
+    limit: int = Query(5, ge=1, le=20, description="Maximum related problems to return"),
+    db: Session = Depends(get_db),
+):
+    related = get_related_problems(db=db, problem_id=problem_id, limit=limit)
+    if related is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Problem not found",
+        )
+    return related

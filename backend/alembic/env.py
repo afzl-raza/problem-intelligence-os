@@ -24,6 +24,7 @@ from app.models.source import Source  # noqa: F401, E402
 from app.models.evidence import EvidenceRecord  # noqa: F401, E402
 from app.models.ingestion_run import IngestionRun  # noqa: F401, E402
 from app.models.domain import Domain, ProblemDomain  # noqa: F401, E402
+from app.models.problem_embedding import ProblemEmbedding  # noqa: F401
 
 
 # this is the Alembic Config object, which provides

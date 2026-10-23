@@ -11,9 +11,11 @@ from app.models.source import Source  # noqa: F401
 from app.models.evidence import EvidenceRecord  # noqa: F401
 from app.models.ingestion_run import IngestionRun  # noqa: F401
 from app.models.domain import Domain, ProblemDomain  # noqa: F401
+from app.models.problem_embedding import ProblemEmbedding  # noqa: F401
 
 from app.db.session import get_db
 from app.main import app
+from app.services.embeddings import HashingEmbedder, set_embedder_override
 
 TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/problem_intelligence_test"
 
@@ -26,6 +28,7 @@ def setup_test_database():
     """Ensure all database schema tables exist in problem_intelligence_test."""
     with test_engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         conn.commit()
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
@@ -67,3 +70,11 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def offline_embedder():
+    """Every test runs against a deterministic embedder, so the suite never downloads or runs a model."""
+    set_embedder_override(HashingEmbedder())
+    yield
+    set_embedder_override(None, active=False)

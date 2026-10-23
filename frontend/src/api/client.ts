@@ -6,6 +6,8 @@ import type {
   ProblemDetail,
   ProblemSearchFilters,
   ProblemSearchResponse,
+  RelatedProblemsResponse,
+  SearchMode,
   SpellcheckResponse,
   Suggestion,
 } from './types'
@@ -49,12 +51,16 @@ function query(params: Record<string, string | number | undefined>): string {
 
 export function searchProblems(
   q: string,
-  filters: ProblemSearchFilters = {},
-  skip = 0,
-  limit = 20,
-  signal?: AbortSignal,
+  options: {
+    filters?: ProblemSearchFilters
+    mode?: SearchMode
+    skip?: number
+    limit?: number
+    signal?: AbortSignal
+  } = {},
 ): Promise<ProblemSearchResponse> {
-  return getJson(`/problems/search?${query({ q, skip, limit, ...filters })}`, signal)
+  const { filters = {}, mode = 'keyword', skip = 0, limit = 20, signal } = options
+  return getJson(`/problems/search?${query({ q, mode, skip, limit, ...filters })}`, signal)
 }
 
 export function searchCompanies(
@@ -92,4 +98,8 @@ export function getProblemDetail(id: string, signal?: AbortSignal): Promise<Prob
 
 export function getCompanyDetail(id: string, signal?: AbortSignal): Promise<CompanyDetail> {
   return getJson(`/companies/${encodeURIComponent(id)}/detail`, signal)
+}
+
+export function getRelatedProblems(id: string, signal?: AbortSignal): Promise<RelatedProblemsResponse> {
+  return getJson(`/problems/${encodeURIComponent(id)}/related`, signal)
 }

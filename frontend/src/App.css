@@ -521,3 +521,32 @@ a.tag:hover {
   text-align: right;
   color: var(--text-muted);
 }
+
+/* ---- Sprint 3.4: semantic search ---------------------------------------- */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.notice-inline {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  font-size: 14px;
+}
+
+.match-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--accent);
+}
